@@ -66,9 +66,7 @@ print_expr(std::ostream& os, const Expr& e) {
     void visit(const Int& n) { print_atom(os, n); }
     void visit(const Var& v) { print_atom(os, v); }
     void visit(const Add& e) { print_node(os, "add", e); }
-
-    void visit(const Bool_type& t) { print_symbol(os, "bool"); }
-    void visit(const Int_type& t) { print_symbol(os, "int"); }
+    void visit(const Neg& e) { print_node(os, "neg", e); }
 
     std::ostream& os;
   };

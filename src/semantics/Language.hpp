@@ -60,7 +60,6 @@ template<typename D, typename B = Expr>
       Expr_impl(Args&&... args)
         : B(std::forward<Args>(args)...) { }
 
-
     virtual void accept(typename B::Visitor& v) const;
   };
 
