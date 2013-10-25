@@ -16,11 +16,9 @@ int main() {
   auto& e = cxt.make_add(cxt.make_int(3), cxt.make_int(4));
   cout << e << '\n';  
 
-
-
+  /*
   const Var& a = cxt.make_var("a");
   const Var& b = cxt.make_var("b");
-
   const Expr& e = cxt.make_exists(a, b);
-
+  */
 }
