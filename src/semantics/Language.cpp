@@ -6,6 +6,42 @@
 
 namespace sarah {
 
+// -------------------------------------------------------------------------- //
+// Environment
+
+Environment::~Environment() {
+  for(auto p : *this)
+    delete p.second;
+}
+
+// Insert the declaration binding n : t into the environment.
+const Decl&
+Environment::declare(const Id& n, const Type& t) {
+  assert(no_binding(n.str()));
+  Decl* d = new Decl(n, t);
+  insert({n.str(), d});
+  return *d;
+}
+
+// Insert the definition binding n : t -> e into the environment.
+const Def&
+Environment::define(const Id& n, const Type& t, const Expr& e) {
+  assert(no_binding(n.str()));
+  Def *d = new Def(n, t, e);
+  insert({n.str(), d});
+  return *d;
+}
+
+// Return a pointer to the declaration binding indicated by str or
+// nullptr if no such binding exists.
+const Decl*
+Environment::lookup(String str) {
+  auto i = find(str);
+  if (i == end())
+    return nullptr;
+  else
+    return i->second;
+}
 
 // -------------------------------------------------------------------------- //
 // Type inference
@@ -15,91 +51,21 @@ type_int(Context& cxt, const Int& e) {
   return cxt.int_type;
 }
 
-const Type&
-type_var(Context& cxt, const Var& e) {
-  return cxt.int_type;
-}
 
-/*
-const Type*
-infer_unit_expr(const Stack& stk, const Unit_expr& e) {
-  return &global_scope(stk).unit_type();
-}
-
-const Type*
-infer_bool_expr(const Stack& stk, const Bool_expr& e) {
-  return &global_scope(stk).bool_type();
-}
-
-const Type*
-infer_nat_expr(const Stack& stk, const Nat_expr& e) {
-  return &global_scope(stk).nat_type();
-}
-
-const Type*
-infer_int_expr(const Stack& stk, const Int_expr& e) {
-  return &global_scope(stk).int_type();
-}
-
-const Type*
-infer_char_expr(const Stack& stk, const Char_expr& e) {
-  return &global_scope(stk).char_type();
-}
-
-const Type*
-infer_sting_expr(const Stack& stk, const String_expr& e) {
-  return &global_scope(stk).string_type();
-}
-
-const Type*
-infer_byte_expr(const Stack& stk, const Byte_expr& e) {
-  return &global_scope(stk).byte_type();
-}
-
-const Type*
-infer_addr_expr(const Stack& stk, const Addr_expr& e) {
-  return &global_scope(stk).addr_type();
-}
-
-//
-// Type checking
-//
-
-// Returns true e has type type *. This is the case whenever the
-// dynamic type of e is a subclass of Type.
-bool
-check_type(Stack&, const Expr& e) { return is<Type>(e); }
-
-// Returns true. This is trivially true for any expression whose
-// dynamic type is a subclass of Type.
-bool
-check_type(Stack&, const Type& t) { return true; }
-
-// Returns true when the const type is well-formed.
-bool
-check_const(Stack& stk, const Const_type& t) {
-  return check_type(stk, t.type());
-}
-
-// Returns true when the ref type is well-formed.
-bool
-check_const(Stack& stk, const Ref_type& t) {
-  return check_type(stk, t.type());
-}
-*/
-
-//
+// -------------------------------------------------------------------------- //
 // Visitor
-//
 
 void 
 Expr::Visitor::visit_expr(const Expr& e) { }
 
 void
-Expr::Visitor::visit(const Int& n) { visit_expr(n); }
+Expr::Visitor::visit(const Id& n) { visit_expr(n); }
 
 void
-Expr::Visitor::visit(const Var& v) { visit_expr(v); }
+Expr::Visitor::visit(const Bool& e) { visit_expr(e); }
+
+void
+Expr::Visitor::visit(const Int& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Add& e) { visit_expr(e); }
@@ -152,15 +118,20 @@ Expr::Visitor::visit(const Bool_type& t) { visit_type(t); }
 void 
 Expr::Visitor::visit(const Int_type& t) { visit_type(t); }
 
-//
+void
+Expr::Visitor::visit(const Kind_type& t) { visit_type(t); }
+
+// -------------------------------------------------------------------------- //
 // Factory
-//
+
+Id&
+Expr::Factory::make_id(String s) { return ids.make(s); }
+
+Bool&
+Expr::Factory::make_bool(bool b) { return bools.make(b); }
 
 Int&
 Expr::Factory::make_int(Integer n) { return ints.make(n); }
-
-Var&
-Expr::Factory::make_var(String s) { return vars.make(s); }
 
 Add&
 Expr::Factory::make_add(const Expr& l, const Expr& r) {
@@ -219,31 +190,40 @@ Not&
 Expr::Factory::make_not(const Expr& e) { return nots.make(e); }
 
 Exists&
-Expr::Factory::make_exists(const Var& n, const Expr& e) {
+Expr::Factory::make_exists(const Id& n, const Expr& e) {
   return exs.make(n, e);
 }
 
 Forall&
-Expr::Factory::make_forall(const Var& n, const Expr& e) {
+Expr::Factory::make_forall(const Id& n, const Expr& e) {
   return fas.make(n, e);
 }
 
 Bool_type&
-Expr::Factory::make_bool_type() { return bool_type.make(); }
+Expr::Factory::make_bool_type() { return bool_type; }
 
 Int_type&
-Expr::Factory::make_int_type() { return int_type.make(); }
+Expr::Factory::make_int_type() { return int_type; }
 
-//
+Kind_type&
+Expr::Factory::make_kind_type() { return kind_type; }
+
+// -------------------------------------------------------------------------- //
 // Context
-//
 
 Context::Context() 
   : bool_type(make_bool_type())
   , int_type(make_int_type())
-{ }
+  , kind_type(make_kind_type())
+  , top()
+{
+  stack.push(top);
+  top.define(make_id("bool"), kind_type, bool_type);
+  top.define(make_id("int"), kind_type, int_type);
+}
 
 Context::~Context() {
+  stack.pop();
 }
 
 

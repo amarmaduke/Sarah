@@ -3,6 +3,7 @@
 #define SARAH_LANGUAGE_HPP
 
 #include <map>
+#include <stack>
 #include <vector>
 
 #include <utility/String.hpp>
@@ -11,8 +12,9 @@
 namespace sarah {
 
 struct Expr;
+struct Id;
+struct Bool;
 struct Int;
-struct Var;
 struct Add;
 struct Neg;
 struct Mul;
@@ -32,37 +34,10 @@ struct Forall;
 struct Type;
 struct Bool_type;
 struct Int_type;
+struct Kind_type;
 
 // Misc.
-struct Top;
 struct Context;
-
-//
-// Expressions
-//
-
-// The Expr class is the base class of all expressions in the abstract
-// language.
-struct Expr {
-  struct Visitor;
-  struct Factory;
-
-  virtual ~Expr() { }
-
-  virtual void accept(Visitor&) const = 0;
-};
-
-// A helper class for expr implementations. The B parameter indicates
-// the direct base of the implementing class, and D is the derived class.
-template<typename D, typename B = Expr>
-  struct Expr_impl : B {
-    template<typename... Args>
-      Expr_impl(Args&&... args)
-        : B(std::forward<Args>(args)...) { }
-
-    virtual void accept(typename B::Visitor& v) const;
-  };
-
 
 // -------------------------------------------------------------------------- //
 // Structure
@@ -111,7 +86,88 @@ template<typename T1, typename T2, typename T3>
 
 
 // -------------------------------------------------------------------------- //
-// Expresssions
+// Environment
+
+// A declaration is a binding between a name and type.
+struct Decl {
+  Decl(const Id& n, const Type& t)
+    : name(n), type(t) { }
+
+  const Id& name;
+  const Type& type;
+};
+
+// A definition is a declaration that includes an initializer.
+struct Def : Decl {
+  Def(const Id& n, const Type& t, const Expr& e)
+    : Decl(n, t), init(e) { }
+
+  const Expr& init;
+};
+
+// An Environment is a mapping of identifiers (strings) to declarations.
+//
+// TODO: Should the environment manage its own memory or use a factory.
+// It currently does, but we could also provide local factories for
+// Decls and Defs.
+struct Environment : std::map<String, Decl*> {
+  ~Environment();
+
+  const Decl& declare(const Id&, const Type&);
+  const Def& define(const Id&, const Type&, const Expr&);
+  
+  const Decl* lookup(String);
+  bool has_binding(String s) { return lookup(s); }
+  bool no_binding(String s)  { return not has_binding(s); }
+};
+
+// The stack is a stack of environments.
+struct Stack : std::stack<Environment*> {
+  using Base = std::stack<Environment*>;
+
+  // Returns the top stack.
+  Environment& top() { return *Base::top(); }
+
+  // Push a new environment on the stack.
+  void push(Environment& e) { Base::push(&e); }
+
+  // Pop an environment from the stack.
+  void pop() { Base::pop(); }
+};
+
+// -------------------------------------------------------------------------- //
+// Expressions
+
+// The Expr class is the base class of all expressions in the abstract
+// language.
+struct Expr {
+  struct Visitor;
+  struct Factory;
+
+  virtual ~Expr() { }
+
+  virtual void accept(Visitor&) const = 0;
+};
+
+// A helper class for expr implementations. The B parameter indicates
+// the direct base of the implementing class, and D is the derived class.
+template<typename D, typename B = Expr>
+  struct Expr_impl : B {
+    template<typename... Args>
+      Expr_impl(Args&&... args)
+        : B(std::forward<Args>(args)...) { }
+
+    virtual void accept(typename B::Visitor& v) const;
+  };
+
+// An identifier denoting a binding.
+struct Id : Atom<String>, Expr_impl<Id> {
+  Id(String s)
+    : Atom<String>(s) { }
+
+  String str() const { return first(); }
+};
+
 
 // An integer literal. 
 struct Int : Atom<Integer>, Expr_impl<Int> {
@@ -121,12 +177,12 @@ struct Int : Atom<Integer>, Expr_impl<Int> {
   const Integer& value() const { return first(); }
 };
 
-// A variable name.
-struct Var : Atom<String>, Expr_impl<Var> {
-  Var(String s)
-    : Atom<String>(s) { }
+// A boolean literal.
+struct Bool : Atom<bool>, Expr_impl<Bool> {
+  Bool(bool b)
+    : Atom<bool>(b) { }
 
-  String name() const { return first(); }
+  bool value() const { return first(); }
 };
 
 // A base class for generic unary expressions.
@@ -226,15 +282,15 @@ struct Not : Unary_impl<Not> {
 };
 
 // There exits.
-struct Exists : Structure<Var, Expr>, Expr_impl<Exists> {
-  Exists(const Var& n, const Expr& e)
-    : Structure<Var, Expr>(n, e) { }
+struct Exists : Structure<Id, Expr>, Expr_impl<Exists> {
+  Exists(const Id& n, const Expr& e)
+    : Structure<Id, Expr>(n, e) { }
 };
 
 // Forall.
-struct Forall : Structure<Var, Expr>, Expr_impl<Forall> {
-  Forall(const Var& n, const Expr& e)
-    : Structure<Var, Expr>(n, e) { }
+struct Forall : Structure<Id, Expr>, Expr_impl<Forall> {
+  Forall(const Id& n, const Expr& e)
+    : Structure<Id, Expr>(n, e) { }
 };
 
 
@@ -249,17 +305,20 @@ template<typename D>
 // The bool type.
 struct Bool_type : Type_impl<Bool_type> { };
 
-// The default int type.
+// The int type.
 struct Int_type : Type_impl<Int_type> { };
 
+// The kind type (the type of all types).
+struct Kind_type : Type_impl<Kind_type> { };
 
 // -------------------------------------------------------------------------- //
 // Visitor
 
 struct Expr::Visitor {
   virtual void visit_expr(const Expr&);
+  virtual void visit(const Id&);
+  virtual void visit(const Bool&);
   virtual void visit(const Int&);
-  virtual void visit(const Var&);
   virtual void visit(const Add&);
   virtual void visit(const Neg&);
   virtual void visit(const Mul&);
@@ -278,6 +337,7 @@ struct Expr::Visitor {
   virtual void visit_type(const Type&);
   virtual void visit(const Bool_type&);
   virtual void visit(const Int_type&);
+  virtual void visit(const Kind_type&);
 };
 
 template<typename D, typename B>
@@ -292,8 +352,9 @@ template<typename D, typename B>
 // Creates and stores expressions.
 struct Expr::Factory {
   // Atomic expressions
+  Id& make_id(String);
+  Bool& make_bool(bool);
   Int& make_int(Integer);
-  Var& make_var(String);
 
   // Arithmetic expressions.
   Add& make_add(const Expr&, const Expr&);
@@ -314,15 +375,18 @@ struct Expr::Factory {
   Not& make_not(const Expr&);
 
   // Quantifiers
-  Exists& make_exists(const Var&, const Expr&);
-  Forall& make_forall(const Var&, const Expr&);
+  Exists& make_exists(const Id&, const Expr&);
+  Forall& make_forall(const Id&, const Expr&);
 
-  // Types
+  // Types (for consistency)
   Bool_type& make_bool_type();
   Int_type& make_int_type();
+  Kind_type& make_kind_type();
 
+  // Expression factories
+  Basic_factory<Id> ids;
+  Basic_factory<Bool> bools;
   Basic_factory<Int> ints;
-  Basic_factory<Var> vars;
   Basic_factory<Add> adds;
   Basic_factory<Neg> negs;
   Basic_factory<Mul> muls;
@@ -338,9 +402,10 @@ struct Expr::Factory {
   Basic_factory<Exists> exs;
   Basic_factory<Forall> fas;
 
-  Singleton_factory<Bool_type> bool_type;
-  Singleton_factory<Int_type> int_type;
-
+  // We don't need factories for these.
+  Bool_type bool_type;
+  Int_type int_type;
+  Kind_type kind_type;
 };
 
 // -------------------------------------------------------------------------- //
@@ -356,8 +421,12 @@ struct Context : Expr::Factory {
   Context();
   ~Context();
 
-  const Bool_type&   bool_type;
-  const Int_type&    int_type;
+  const Bool_type& bool_type;
+  const Int_type&  int_type;
+  const Kind_type& kind_type;
+
+  Environment top;
+  Stack stack;
 };
 
 } // namespace sarah

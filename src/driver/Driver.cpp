@@ -13,7 +13,7 @@ using namespace sarah;
 int main() {
   Context cxt;
 
-  auto& x = cxt.make_neg(cxt.make_var("x"));
+  auto& x = cxt.make_neg(cxt.make_id("x"));
   auto& e = cxt.make_add(cxt.make_int(3), x);
   cout << e << '\n';  
 
