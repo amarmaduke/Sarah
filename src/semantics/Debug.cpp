@@ -69,6 +69,13 @@ print_expr(std::ostream& os, const Expr& e) {
     void visit(const Add& e) { print_node(os, "add", e); }
     void visit(const Neg& e) { print_node(os, "neg", e); }
 
+    void visit(const Bind& e) { print_node(os, "bind", e); }
+    
+    void visit(const Forall& e) { print_node(os, "forall", e); }
+
+    void visit(const Bool_type& t) { print_symbol(os, "bool"); }
+    void visit(const Int_type& t) { print_symbol(os, "int"); }
+
     std::ostream& os;
   };
 

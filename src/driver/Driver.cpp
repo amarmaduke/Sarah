@@ -7,15 +7,14 @@
 using namespace std;
 using namespace sarah;
 
-
-
-
 int main() {
   Context cxt;
 
-  auto& x = cxt.make_neg(cxt.make_id("x"));
-  auto& e = cxt.make_add(cxt.make_int(3), x);
-  cout << e << '\n';  
+  Id& x = cxt.make_id("x");
+  Bind& b = cxt.make_bind(x, cxt.int_type);
+  Expr& e = cxt.make_neg(x); // -x
+  Expr& f = cxt.make_forall(b, e);
+  cout << f << '\n';
 
   /*
   const Var& a = cxt.make_var("a");

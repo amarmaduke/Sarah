@@ -44,15 +44,6 @@ Environment::lookup(String str) {
 }
 
 // -------------------------------------------------------------------------- //
-// Type inference
-
-const Type&
-type_int(Context& cxt, const Int& e) {
-  return cxt.int_type;
-}
-
-
-// -------------------------------------------------------------------------- //
 // Visitor
 
 void 
@@ -102,6 +93,9 @@ Expr::Visitor::visit(const Or& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Not& e) { visit_expr(e); }
+
+void
+Expr::Visitor::visit(const Bind& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Exists& e) { visit_expr(e); }
@@ -189,14 +183,19 @@ Expr::Factory::make_or(const Expr& l, const Expr& r) {
 Not&
 Expr::Factory::make_not(const Expr& e) { return nots.make(e); }
 
+Bind&
+Expr::Factory::make_bind(const Id& n, const Type& t) {
+  return binds.make(n, t);
+}
+
 Exists&
-Expr::Factory::make_exists(const Id& n, const Expr& e) {
-  return exs.make(n, e);
+Expr::Factory::make_exists(const Bind& b, const Expr& e) {
+  return exs.make(b, e);
 }
 
 Forall&
-Expr::Factory::make_forall(const Id& n, const Expr& e) {
-  return fas.make(n, e);
+Expr::Factory::make_forall(const Bind& b, const Expr& e) {
+  return fas.make(b, e);
 }
 
 Bool_type&

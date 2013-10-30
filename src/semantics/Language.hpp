@@ -89,6 +89,8 @@ template<typename T1, typename T2, typename T3>
 // Environment
 
 // A declaration is a binding between a name and type.
+//
+// TODO: What's the purpose of saving the name with the id. 
 struct Decl {
   Decl(const Id& n, const Type& t)
     : name(n), type(t) { }
@@ -137,6 +139,9 @@ struct Stack : std::stack<Environment*> {
 
 // -------------------------------------------------------------------------- //
 // Expressions
+//
+// TODO: I think we may need a Var expression that, when typed will refer
+// to its own binding.
 
 // The Expr class is the base class of all expressions in the abstract
 // language.
@@ -281,16 +286,31 @@ struct Not : Unary_impl<Not> {
     : Unary_impl<Not>(e) { }
 };
 
+// A name/type binding of the form n : t.
+struct Bind : Structure<Id, Type>, Expr_impl<Bind> {
+  Bind(const Id& n, const Type& t)
+    : Structure<Id, Type>(n, t) { }
+
+  const Id& name() const { return first(); }
+  const Type& type() const { return second(); }
+};
+
 // There exits.
-struct Exists : Structure<Id, Expr>, Expr_impl<Exists> {
-  Exists(const Id& n, const Expr& e)
-    : Structure<Id, Expr>(n, e) { }
+struct Exists : Structure<Bind, Expr>, Expr_impl<Exists> {
+  Exists(const Bind& b, const Expr& e)
+    : Structure<Bind, Expr>(b, e) { }
+
+  const Bind& binding() const { return first(); }
+  const Expr& expr() const { return second(); }
 };
 
 // Forall.
-struct Forall : Structure<Id, Expr>, Expr_impl<Forall> {
-  Forall(const Id& n, const Expr& e)
-    : Structure<Id, Expr>(n, e) { }
+struct Forall : Structure<Bind, Expr>, Expr_impl<Forall> {
+  Forall(const Bind& b, const Expr& e)
+    : Structure<Bind, Expr>(b, e) { }
+
+  const Bind& binding() const { return first(); }
+  const Expr& expr() const { return second(); }
 };
 
 
@@ -331,6 +351,7 @@ struct Expr::Visitor {
   virtual void visit(const And&);
   virtual void visit(const Or&);
   virtual void visit(const Not&);
+  virtual void visit(const Bind&);
   virtual void visit(const Exists&);
   virtual void visit(const Forall&);
 
@@ -374,9 +395,12 @@ struct Expr::Factory {
   Or& make_or(const Expr&, const Expr&);
   Not& make_not(const Expr&);
 
+  // Binding
+  Bind& make_bind(const Id&, const Type&);
+
   // Quantifiers
-  Exists& make_exists(const Id&, const Expr&);
-  Forall& make_forall(const Id&, const Expr&);
+  Exists& make_exists(const Bind&, const Expr&);
+  Forall& make_forall(const Bind&, const Expr&);
 
   // Types (for consistency)
   Bool_type& make_bool_type();
@@ -399,6 +423,7 @@ struct Expr::Factory {
   Basic_factory<And> ands;
   Basic_factory<Or> ors;
   Basic_factory<Not> nots;
+  Basic_factory<Bind> binds;
   Basic_factory<Exists> exs;
   Basic_factory<Forall> fas;
 
