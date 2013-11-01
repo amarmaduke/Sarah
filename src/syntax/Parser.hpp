@@ -1,15 +1,17 @@
-#ifndef STEVE_PARSER_HPP
-#define STEVE_PARSER_HPP
+#ifndef SARAH_PARSER_HPP
+#define SARAH_PARSER_HPP
 
 #include "Token.hpp"
-#include "Ast.hpp"
+#include "Tree.hpp"
 
-namespace steve {
+namespace sarah {
+
+struct Tree;
 
 // The parser class is responsible for transforming a sequence of
 // tokens into an abstract syntax tree.
-struct Parser : Tree_factory {
-  explicit Parser(const Token_list& toks)
+struct Parser : Tree::Factory {
+  Parser(const Token_list& toks)
     : tokens(toks), current(tokens.begin())
   { }
 
@@ -19,6 +21,6 @@ struct Parser : Tree_factory {
   Token_iterator    current;
 };
 
-} // namespace steve
+} // namespace sarah
 
 #endif

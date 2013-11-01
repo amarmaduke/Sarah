@@ -3,23 +3,10 @@
 #include <iostream>
 #include <unordered_map>
 
+#include "utility/Diagnostics.hpp"
 #include "Lexer.hpp"
 
 namespace sarah {
-
-// Diagnostics
-//
-// FIXME: Pull the diagnostics out of the syntax library and move them
-// into utility. If it's possible. We'd have to move Location and File
-// to utility also. That may be a reasonable thing...
-inline std::ostream&
-diag(const char* kind, const Location& loc) {
-  return std::cerr << loc << ": " << kind << ": ";
-}
-
-std::ostream&
-error(const Location& loc) { return diag("error", loc); }
-
 
 // Returns the spelling of a token type. Returns nullptr if
 // the spelling cannot be inferred by the type alone.

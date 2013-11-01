@@ -94,6 +94,13 @@ template<typename T, typename C>
     return os << t.spell;
   }
 
+
+// Token list
+using Token_list = std::vector<Token>;
+
+// Token iterator
+using Token_iterator = Token_list::const_iterator;
+
 } // namespace sarah
 
 #endif

@@ -6,7 +6,9 @@ set(src Utility.cpp
         Ios.cpp 
         Integer.cpp 
         Location.cpp 
-        File.cpp)
+        File.cpp
+        Diagnostics.cpp
+        Structure.cpp)
 
 set(hdr Utility.hpp 
         Memory.hpp 
@@ -14,6 +16,8 @@ set(hdr Utility.hpp
         Ios.hpp 
         Integer.hpp 
         Locatoin.hpp 
-        File.hpp)
+        File.hpp
+        Diagnostics.hpp
+        Structure.hpp)
 
 add_library(sarah_utility STATIC ${src})

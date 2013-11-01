@@ -7,12 +7,6 @@
 
 namespace sarah {
 
-// Token list
-using Token_list = std::vector<Token>;
-
-// Token iterator
-using Token_iterator = Token_list::const_iterator;
-
 // The Lexer is responsible for the tokenization of an input file.
 struct Lexer {
   Lexer(const File& f)
