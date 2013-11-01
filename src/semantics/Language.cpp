@@ -62,10 +62,16 @@ void
 Expr::Visitor::visit(const Add& e) { visit_expr(e); }
 
 void
-Expr::Visitor::visit(const Neg& e) { visit_expr(e); }
+Expr::Visitor::visit(const Sub& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Mul& e) { visit_expr(e); }
+
+void
+Expr::Visitor::visit(const Neg& e) { visit_expr(e); }
+
+void
+Expr::Visitor::visit(const Pos& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Eq& e) { visit_expr(e); }
@@ -90,6 +96,12 @@ Expr::Visitor::visit(const And& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Or& e) { visit_expr(e); }
+
+void
+Expr::Visitor::visit(const Imp& e) { visit_expr(e); }
+
+void
+Expr::Visitor::visit(const Iff& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Not& e) { visit_expr(e); }
@@ -132,12 +144,19 @@ Expr::Factory::make_add(const Expr& l, const Expr& r) {
   return adds.make(l, r);
 }
 
-Neg&
-Expr::Factory::make_neg(const Expr& e) { return negs.make(e); }
+Sub&
+Expr::Factory::make_sub(const Expr& l, const Expr& r) {
+  return subs.make(l, r);
+}
 
 Mul&
 Expr::Factory::make_mul(const Int& n, const Expr& e) { 
   return muls.make(n, e);
+}
+
+Neg&
+Expr::Factory::make_neg(const Expr& e) { 
+  return negs.make(e); 
 }
 
 Eq&
@@ -180,8 +199,20 @@ Expr::Factory::make_or(const Expr& l, const Expr& r) {
   return ors.make(l, r);
 }
 
+Imp&
+Expr::Factory::make_imp(const Expr& l, const Expr& r) {
+  return imps.make(l, r);
+}
+
+Iff&
+Expr::Factory::make_iff(const Expr& l, const Expr& r) {
+  return iffs.make(l, r);
+}
+
 Not&
-Expr::Factory::make_not(const Expr& e) { return nots.make(e); }
+Expr::Factory::make_not(const Expr& e) { 
+  return nots.make(e); 
+}
 
 Bind&
 Expr::Factory::make_bind(const Id& n, const Type& t) {

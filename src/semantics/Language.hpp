@@ -214,22 +214,34 @@ template<typename D>
   using Binary_impl = Expr_impl<D, Binary>;
 
 
-// Addition
+// Addition, `e1 - e2`
 struct Add : Binary_impl<Add> {
   Add(const Expr& l, const Expr& r)
     : Binary_impl<Add>(l, r) { }
 };
 
-// Arithmetic negation
-struct Neg : Unary_impl<Neg> {
-  Neg(const Expr& e)
-    : Unary_impl<Neg>(e) { }
+// Subtraction.
+struct Sub : Binary_impl<Sub> {
+  Sub(const Expr& l, const Expr& r)
+    : Binary_impl<Sub>(l, r) { }
 };
 
 // Repeated addition. 
 struct Mul : Structure<Int, Expr>, Expr_impl<Mul> {
   Mul(const Int& n, const Expr& e)
     : Structure<Int, Expr>(n, e) { }
+};
+
+// Arithmetic negation, `-z`.
+struct Neg : Unary_impl<Neg> {
+  Neg(const Expr& e)
+    : Unary_impl<Neg>(e) { }
+};
+
+// Arithmetic identity, `+z`.
+struct Pos : Unary_impl<Pos> {
+  Pos(const Expr& e)
+    : Unary_impl<Pos>(e) { }
 };
 
 // Equal.
@@ -278,6 +290,18 @@ struct And : Binary_impl<And> {
 struct Or : Binary_impl<Or> {
   Or(const Expr& l, const Expr& r)
     : Binary_impl<Or>(l, r) { }
+};
+
+// Implication.
+struct Imp : Binary_impl<Imp> {
+  Imp(const Expr& l, const Expr& r)
+    : Binary_impl<Imp>(l, r) { }
+};
+
+// If and only if.
+struct Iff : Binary_impl<Iff> {
+  Iff(const Expr& l, const Expr& r)
+    : Binary_impl<Iff>(l, r) { }
 };
 
 // Logical not.
@@ -339,19 +363,27 @@ struct Expr::Visitor {
   virtual void visit(const Id&);
   virtual void visit(const Bool&);
   virtual void visit(const Int&);
+
   virtual void visit(const Add&);
-  virtual void visit(const Neg&);
+  virtual void visit(const Sub&);
   virtual void visit(const Mul&);
+  virtual void visit(const Neg&);
+  virtual void visit(const Pos&);
+
   virtual void visit(const Eq&);
   virtual void visit(const Ne&);
   virtual void visit(const Lt&);
   virtual void visit(const Gt&);
   virtual void visit(const Le&);
   virtual void visit(const Ge&);
+
   virtual void visit(const And&);
   virtual void visit(const Or&);
+  virtual void visit(const Imp&);
+  virtual void visit(const Iff&);
   virtual void visit(const Not&);
   virtual void visit(const Bind&);
+
   virtual void visit(const Exists&);
   virtual void visit(const Forall&);
 
@@ -379,8 +411,10 @@ struct Expr::Factory {
 
   // Arithmetic expressions.
   Add& make_add(const Expr&, const Expr&);
-  Neg& make_neg(const Expr&);
+  Sub& make_sub(const Expr&, const Expr&);
   Mul& make_mul(const Int&, const Expr&);
+  Neg& make_neg(const Expr&);
+  Pos& make_pos(const Expr&);
 
   // Relational expressions
   Eq& make_eq(const Expr&, const Expr&);
@@ -390,9 +424,11 @@ struct Expr::Factory {
   Le& make_le(const Expr&, const Expr&);
   Ge& make_ge(const Expr&, const Expr&);
 
-  // Logical expresssions
+  // Logical expressions
   And& make_and(const Expr&, const Expr&);
   Or& make_or(const Expr&, const Expr&);
+  Imp& make_imp(const Expr&, const Expr&);
+  Iff& make_iff(const Expr&, const Expr&);
   Not& make_not(const Expr&);
 
   // Binding
@@ -412,8 +448,10 @@ struct Expr::Factory {
   Basic_factory<Bool> bools;
   Basic_factory<Int> ints;
   Basic_factory<Add> adds;
-  Basic_factory<Neg> negs;
+  Basic_factory<Sub> subs;
   Basic_factory<Mul> muls;
+  Basic_factory<Neg> negs;
+  Basic_factory<Pos> poss;
   Basic_factory<Eq> eqs;
   Basic_factory<Ne> nes;
   Basic_factory<Lt> lts;
@@ -422,6 +460,8 @@ struct Expr::Factory {
   Basic_factory<Ge> ges;
   Basic_factory<And> ands;
   Basic_factory<Or> ors;
+  Basic_factory<Imp> imps;
+  Basic_factory<Iff> iffs;
   Basic_factory<Not> nots;
   Basic_factory<Bind> binds;
   Basic_factory<Exists> exs;
