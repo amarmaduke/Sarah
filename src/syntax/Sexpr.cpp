@@ -48,8 +48,7 @@ to_sexpr(std::ostream& os, const Tree& ast) {
   struct V : Tree::Visitor {
     V(std::ostream& os) : os(os) { }
     void visit(const Enclosed_tree& t) { do_sexpr(os, t); }
-    void visit(const Identifier_tree& t) { do_sexpr(os, t); }
-    void visit(const Literal_tree& t) { do_sexpr(os, t); }
+    void visit(const Terminal_tree& t) { do_sexpr(os, t); }
     void visit(const Unary_tree& t) { do_sexpr(os, t); }
     void visit(const Binary_tree& t) { do_sexpr(os, t); }
     std::ostream& os;

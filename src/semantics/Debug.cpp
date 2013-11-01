@@ -1,14 +1,11 @@
 
 #include <iostream>
+#include <iomanip>
 
 #include "Debug.hpp"
 #include "Language.hpp"
 
 namespace sarah {
-
-//
-// Debugging
-//
 
 namespace {
 
@@ -17,14 +14,6 @@ print_symbol(std::ostream& os, char c) { os << c; }
 
 inline void
 print_symbol(std::ostream& os, const char* str) { os << str; }
-
-void
-print_value(std::ostream& os, bool b) {
-  if (b)
-    print_symbol(os, "true");
-  else
-    print_symbol(os, "false");
-}
 
 template<typename T>
   void
@@ -78,6 +67,9 @@ print_expr(std::ostream& os, const Expr& e) {
 
     std::ostream& os;
   };
+
+  // Print bools as true.
+  os << std::boolalpha;
 
   V v(os);
   e.accept(v);

@@ -6,6 +6,7 @@
 #include <syntax/Sexpr.hpp>
 
 #include <semantics/Language.hpp>
+#include <semantics/Elaborator.hpp>
 #include <semantics/Debug.hpp>
 
 using namespace std;
@@ -23,7 +24,14 @@ main() {
   Parser parser(toks);
   const Tree* ast = parser();
   if (ast)
-    cout << sexpr(*ast) << '\n';
+    cout << "syntax: " << sexpr(*ast) << '\n';
   else
-    cout << "invalid program\n";
+    cout << "invalid syntax\n";
+
+  Elaborator elab;
+  Elaboration prog = elab(*ast);
+  if (prog)
+    cout << "abstract: " << prog.expr() << '\n';
+  else
+    cout << "ill-formed program\n";
 }

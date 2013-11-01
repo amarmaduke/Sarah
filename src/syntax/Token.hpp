@@ -19,6 +19,7 @@ enum Token_type {
   Left_paren_tok,    // (
   Right_paren_tok,   // )
   Dot_tok,           // .
+  Colon_tok,         // :
 
   // Tokens for arithmetic operators
   Plus_tok,          // +

@@ -17,6 +17,7 @@ spelling(Token_type t)
   // Punctuators
   case Left_paren_tok: return "(";
   case Right_paren_tok: return ")";
+  case Colon_tok: return ":";
   case Dot_tok: return ".";
 
   // Tokens for arithmetic operaitos
@@ -314,6 +315,9 @@ tokenize(Lexer& lex) {
     case ')':
       save_unigraph(lex, Right_paren_tok);
       break;
+
+    case ':':
+      save_unigraph(lex, Colon_tok);
 
     case '.':
       save_unigraph(lex, Dot_tok);

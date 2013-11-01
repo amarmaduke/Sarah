@@ -204,9 +204,9 @@ const Tree* parse_expr(Parser&);
 const Tree*
 parse_boolean_lit(Parser& p) {
   if (const Token* t = accept(p, True_tok))
-    return &p.make_literal(*t);
+    return &p.make_terminal(*t);
   if (const Token* t = accept(p, False_tok))
-    return &p.make_literal(*t);
+    return &p.make_terminal(*t);
   return nullptr;
 }
 
@@ -216,7 +216,7 @@ parse_boolean_lit(Parser& p) {
 const Tree*
 parse_integer_lit(Parser& p) {
   if (const Token* t = accept(p, Int_literal_tok))
-    return &p.make_literal(*t);
+    return &p.make_terminal(*t);
   return nullptr;
 }
 
@@ -226,7 +226,19 @@ parse_integer_lit(Parser& p) {
 const Tree*
 parse_identifier(Parser& p) {
   if (const Token* t = accept(p, Identifier_tok))
-    return &p.make_identifier(*t);
+    return &p.make_terminal(*t);
+  return nullptr;
+}
+
+// Parse a type
+//
+// type ::= 'bool' | 'int'
+const Tree*
+parse_type(Parser& p) {
+  if (const Token* t = accept(p, Bool_tok))
+    return &p.make_terminal(*t);
+  if (const Token* t = accept(p, Int_tok))
+    return &p.make_terminal(*t);
   return nullptr;
 }
 
@@ -432,6 +444,18 @@ parse_iff_expr(Parser& p) {
   return parse_left<parse_iff_op, parse_implication_expr>(p);
 }
 
+// Parse a bind expression
+//
+//  bind-expr ::= identifier ':' type
+const Tree*
+parse_bind_expr(Parser& p) {
+  if (const Tree* n = parse_identifier(p))
+    if (const Token* k = accept(p, Colon_tok))
+      if (const Tree* t = parse_type(p))
+        return &p.make_binary(*k, *n, *t);
+  return nullptr;
+}
+
 // Parse a quantifier.
 //
 //    quantifier ::= 'forall' | 'exists'
@@ -446,7 +470,7 @@ parse_quanitifier(Parser& p) {
 
 // Parse a quantified expression.
 //
-//    quantified-expr ::= quantifier identifier '.' expr
+//    quantified-expr ::= quantifier bind-expr '.' expr
 const Tree*
 parse_quantified_expr(Parser& p) {
   if (const Token* q = parse_quanitifier(p))

@@ -42,17 +42,9 @@ struct Enclosed_tree : Structure<Token, Token, Tree>, Tree_impl<Enclosed_tree> {
   const Tree& arg() const { return third(); }
 };
 
-// Represents literals.
-struct Literal_tree : Structure<Token>, Tree_impl<Literal_tree> { 
-  Literal_tree(const Token& k)
-    : Structure<Token>(k) { }
-
-  const Token& token() const { return first(); }
-};
-
-// Represents identifiers.
-struct Identifier_tree : Structure<Token>, Tree_impl<Identifier_tree> { 
-  Identifier_tree(const Token& k)
+// Represents terminals (literals, ids),
+struct Terminal_tree : Structure<Token>, Tree_impl<Terminal_tree> { 
+  Terminal_tree(const Token& k)
     : Structure<Token>(k) { }
 
   const Token& token() const { return first(); }
@@ -83,14 +75,12 @@ struct Binary_tree : Structure<Token, Tree, Tree>, Tree_impl<Binary_tree> {
 struct Tree::Factory {
   Enclosed_tree& make_enclosed(const Token&, const Token&, const Tree&);
 
-  Literal_tree& make_literal(const Token&);
-  Identifier_tree& make_identifier(const Token&);
+  Terminal_tree& make_terminal(const Token&);
   Unary_tree& make_unary(const Token&, const Tree&);
   Binary_tree& make_binary(const Token&, const Tree&, const Tree&);
   
   Basic_factory<Enclosed_tree> encs;
-  Basic_factory<Literal_tree> lits;  
-  Basic_factory<Identifier_tree> ids;
+  Basic_factory<Terminal_tree> terms;  
   Basic_factory<Unary_tree> uns;
   Basic_factory<Binary_tree> bins;
 };
@@ -101,8 +91,7 @@ struct Tree::Factory {
 // Ast Visitor
 struct Tree::Visitor {
   virtual void visit(const Enclosed_tree&) { }
-  virtual void visit(const Literal_tree&) { }
-  virtual void visit(const Identifier_tree&) { }
+  virtual void visit(const Terminal_tree&) { }
   virtual void visit(const Unary_tree&) { }
   virtual void visit(const Binary_tree&) { }
 };

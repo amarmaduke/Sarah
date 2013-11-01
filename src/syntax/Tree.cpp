@@ -8,14 +8,9 @@ Tree::Factory::make_enclosed(const Token& l, const Token& r, const Tree& n) {
   return encs.make(l, r, n);
 }
 
-Literal_tree& 
-Tree::Factory::make_literal(const Token& t) { 
-  return lits.make(t); 
-}
-
-Identifier_tree&
-Tree::Factory::make_identifier(const Token& t) {
-  return ids.make(t);
+Terminal_tree& 
+Tree::Factory::make_terminal(const Token& t) { 
+  return terms.make(t); 
 }
 
 Unary_tree& 
