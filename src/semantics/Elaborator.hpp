@@ -30,8 +30,14 @@ struct Elaboration : std::pair<const Expr*, const Type*> {
   explicit operator bool() const { return this->first and this->second; }
 };
 
+
 // The Elaborator is responsible for transforming a parse tree into
 // an abstract syntax tree.
+//
+// NOTE: The Elaborator is really a product of the binding the syntax to
+// the abstract language. If we want a different front-end syntax, then
+// we'd support multiple front-end elaborators. It is tempting to move this
+// class into the syntax repository.
 struct Elaborator : Context {
   Elaboration operator()(const Tree&);
 };

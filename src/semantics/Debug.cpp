@@ -39,6 +39,7 @@ template<typename T>
   void
   print_node(std::ostream& os, const char* str, const T& e) {
     print_symbol(os, str);
+    print_symbol(os, ' ');
     print_symbol(os, '(');
     print_structure(os, e);
     print_symbol(os, ')');

@@ -52,6 +52,8 @@ struct Decl {
   Decl(const Id& n, const Type& t)
     : name(n), type(t) { }
 
+  virtual ~Decl() { }
+
   const Id& name;
   const Type& type;
 };
@@ -72,26 +74,33 @@ struct Def : Decl {
 struct Environment : std::map<String, Decl*> {
   ~Environment();
 
+  // Binding interface
   const Decl& declare(const Id&, const Type&);
   const Def& define(const Id&, const Type&, const Expr&);
   
-  const Decl* lookup(String);
+  // Symbol lookup
+  const Decl* lookup(String) const;
   bool has_binding(String s) { return lookup(s); }
   bool no_binding(String s)  { return not has_binding(s); }
 };
 
 // The stack is a stack of environments.
-struct Stack : std::stack<Environment*> {
-  using Base = std::stack<Environment*>;
+struct Stack : std::vector<Environment*> {
+  using Base = std::vector<Environment*>;
 
-  // Returns the top stack.
-  Environment& top() { return *Base::top(); }
+  // Stack interface
+  Environment& top() { return *Base::back(); }
+  void push(Environment& e) { Base::push_back(&e); }
+  void pop() { Base::pop_back(); }
 
-  // Push a new environment on the stack.
-  void push(Environment& e) { Base::push(&e); }
+  // Binding interface
+  const Decl& declare(const Id&, const Type&);
+  const Def& define(const Id&, const Type&, const Expr&);
 
-  // Pop an environment from the stack.
-  void pop() { Base::pop(); }
+  // Symbol lookup
+  const Decl* lookup(String) const;
+  const bool has_binding(String s) const { return lookup(s); }
+  const bool no_binding(String s) const { return not has_binding(s); }
 };
 
 // -------------------------------------------------------------------------- //
@@ -110,6 +119,10 @@ struct Expr {
 
   virtual void accept(Visitor&) const = 0;
 };
+
+// Expression interface
+bool same(const Expr&, const Expr&);
+
 
 // A helper class for expr implementations. The B parameter indicates
 // the direct base of the implementing class, and D is the derived class.
@@ -145,6 +158,15 @@ struct Bool : Atom<bool>, Expr_impl<Bool> {
     : Atom<bool>(b) { }
 
   bool value() const { return first(); }
+};
+
+// A named reference to a binding.
+struct Var : Structure<Id, Decl>, Expr_impl<Var> {
+  Var(const Id& n, const Decl& d)
+    : Structure<Id, Decl>(n, d) { }
+
+  const Id& name() const { return first(); }
+  const Decl& decl() const { return second(); }
 };
 
 // A base class for generic unary expressions.
@@ -320,6 +342,7 @@ struct Expr::Visitor {
   virtual void visit(const Id&);
   virtual void visit(const Bool&);
   virtual void visit(const Int&);
+  virtual void visit(const Var&);
 
   virtual void visit(const Add&);
   virtual void visit(const Sub&);
@@ -365,6 +388,7 @@ struct Expr::Factory {
   Id& make_id(String);
   Bool& make_bool(bool);
   Int& make_int(Integer);
+  Var& make_var(const Id&, const Decl&);
 
   // Arithmetic expressions.
   Add& make_add(const Expr&, const Expr&);
@@ -404,6 +428,7 @@ struct Expr::Factory {
   Basic_factory<Id> ids;
   Basic_factory<Bool> bools;
   Basic_factory<Int> ints;
+  Basic_factory<Var> vars;
   Basic_factory<Add> adds;
   Basic_factory<Sub> subs;
   Basic_factory<Mul> muls;
@@ -439,16 +464,20 @@ struct Expr::Factory {
 // TODO: This may be more appropriately called a program construction 
 // context. We should have other contexts: elaboration context,
 // evaluation context, etc.
-struct Context : Expr::Factory {
+struct Context : Stack, Expr::Factory {
   Context();
   ~Context();
 
+  // Type references
   const Bool_type& bool_type;
   const Int_type&  int_type;
   const Kind_type& kind_type;
 
+  // Type definitions
+  const Def* bool_def;
+  const Def* int_def;
+
   Environment top;
-  Stack stack;
 };
 
 } // namespace sarah

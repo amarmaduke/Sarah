@@ -35,13 +35,123 @@ Environment::define(const Id& n, const Type& t, const Expr& e) {
 // Return a pointer to the declaration binding indicated by str or
 // nullptr if no such binding exists.
 const Decl*
-Environment::lookup(String str) {
+Environment::lookup(String str) const {
   auto i = find(str);
   if (i == end())
     return nullptr;
   else
     return i->second;
 }
+
+// -------------------------------------------------------------------------- //
+// Stack
+//
+// TODO: The current binding environment may not permit arbitrary bindings.
+// What happens if we try to add a binding to a quantifier? It shouldn't be
+// allowed. Maybe we need a can_declare/can_define predicate that guarantees
+// the viability of the operation.
+
+// Add n : t to the current binding environment. 
+const Decl&
+Stack::declare(const Id& n, const Type& t) {
+  return top().declare(n, t);
+}
+
+// Add n : t -> e to the current binding environment. 
+const Def&
+Stack::define(const Id& n, const Type& t, const Expr& e) {
+  return top().define(n, t, e);
+}
+
+// Search the stack for the given name. The search walks down the stack,
+// starting with the most recently pushed environment.
+const Decl*
+Stack::lookup(String s) const {
+  for(auto i = rbegin(); i != rend(); ++i) {
+    const Environment* env = *i;
+    if (const Decl* d = env->lookup(s))
+      return d;
+  }
+  return nullptr;
+}
+
+// -------------------------------------------------------------------------- //
+// Expression equality
+
+namespace {
+
+inline bool
+same_id(const Id& a, const Id& b) { return a.str() == b.str(); }
+
+inline bool
+same_bool(const Bool& a, const Bool& b) { return a.value() == b.value(); }
+
+inline bool
+same_int(const Int& a, const Int& b) { return a.value() == b.value(); }
+
+inline bool
+same_var(const Var& a, const Var& b) { return &a.decl() == &b.decl(); }
+
+// Two types are the same only when they are the same object.
+inline bool
+same_type(const Type& a, const Type& b) { return &a == &b; }
+
+bool
+same_expr(const Expr& a, const Expr& b) {
+  struct V : Expr::Visitor {
+    V(const Expr& e)
+      : expr(e), result(false) { }
+
+    void visit(const Id& e) { result = same_id(e, as<Id>(expr)); }
+    void visit(const Bool& e) { result = same_bool(e, as<Bool>(expr)); }
+    void visit(const Int& e) { result = same_int(e, as<Int>(expr)); }
+    void visit(const Var& e) { result = same_var(e, as<Var>(expr)); }
+
+    // TODO: Implement these functions.
+
+    void visit(const Add& e) { }
+    void visit(const Sub& e) { }
+    void visit(const Mul& e) { }
+    void visit(const Neg& e) { }
+    void visit(const Pos& e) { }
+
+    void visit(const Eq& e) { }
+    void visit(const Ne& e) { }
+    void visit(const Lt& e) { }
+    void visit(const Gt& e) { }
+    void visit(const Le& e) { }
+    void visit(const Ge& e) { }
+
+    void visit(const And& e) { }
+    void visit(const Or& e) { }
+    void visit(const Imp& e) { }
+    void visit(const Iff& e) { }
+    void visit(const Not& e) { }
+    void visit(const Bind& e) { }
+
+    void visit(const Exists& e) { }
+    void visit(const Forall& e) { }
+
+    void visit_type(const Type& t) { result = same_type(t, as<Type>(expr)); }
+    
+    const Expr& expr;
+    bool result;
+  };
+
+  V vis(b);
+  a.accept(vis);
+  return vis.result;
+}
+
+} // namespace
+
+bool
+same(const Expr& a, const Expr& b) {
+  if (kind(a) != kind(b))
+    return false;
+  return same_expr(a, b);
+}
+
 
 // -------------------------------------------------------------------------- //
 // Visitor
@@ -57,6 +167,9 @@ Expr::Visitor::visit(const Bool& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Int& e) { visit_expr(e); }
+
+void
+Expr::Visitor::visit(const Var& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Add& e) { visit_expr(e); }
@@ -139,6 +252,11 @@ Expr::Factory::make_bool(bool b) { return bools.make(b); }
 Int&
 Expr::Factory::make_int(Integer n) { return ints.make(n); }
 
+Var&
+Expr::Factory::make_var(const Id& n, const Decl& d) {
+  return vars.make(n, d);
+}
+
 Add&
 Expr::Factory::make_add(const Expr& l, const Expr& r) {
   return adds.make(l, r);
@@ -157,6 +275,11 @@ Expr::Factory::make_mul(const Int& n, const Expr& e) {
 Neg&
 Expr::Factory::make_neg(const Expr& e) { 
   return negs.make(e); 
+}
+
+Pos&
+Expr::Factory::make_pos(const Expr& e) {
+  return poss.make(e);
 }
 
 Eq&
@@ -247,13 +370,13 @@ Context::Context()
   , kind_type(make_kind_type())
   , top()
 {
-  stack.push(top);
-  top.define(make_id("bool"), kind_type, bool_type);
-  top.define(make_id("int"), kind_type, int_type);
+  push(top);
+  bool_def = &define(make_id("bool"), kind_type, bool_type);
+  int_def = &define(make_id("int"), kind_type, int_type);
 }
 
 Context::~Context() {
-  stack.pop();
+  pop();
 }
 
 
