@@ -42,16 +42,31 @@ elab_int(Elaborator& elab, const Token& tok) {
   return {elab.make_int(n), elab.int_type};
 }
 
+// A type name designates a type definition, so return a variable that
+// refers to that definition. This seems overly complicated, but if
+// we had user-defined types, it would make a lot of sense.
+Elaboration
+elab_type(Elaborator& elab, const Def& d) {
+  return {elab.make_var(d.name, d), d.type};
+}
+
 // NOTE: An identifier found in any context where an identifier is
 // not explicitly introduced is always elaborated as a var.
 Elaboration
 elab_terminal(Elaborator& elab, const Terminal_tree& tree) {
   const Token& tok = tree.token();
   switch (tok.type) {
+  
+  // Identifiers and literals
   case Identifier_tok: return elab_var(elab, tok);
   case True_tok: return elab_bool(elab, true);
   case False_tok: return elab_bool(elab, false);
   case Int_literal_tok: return elab_int(elab, tok);
+
+  // Types
+  case Bool_tok: return elab_type(elab, *elab.bool_def);
+  case Int_tok: return elab_type(elab, *elab.int_def);
+
   default:
     assert(false); // Unreachable
   }
@@ -138,7 +153,7 @@ elab_bind(Elaborator& elab, const Binary_tree& tree) {
   // guarantees that is an identifier.
   const Id& n = make_name(elab, as<Terminal_tree>(tree.left()));
 
-  // Elaborate the type. 
+  // Elaborate the type expression.
   if (Elaboration e = elab(tree.right())) {
     if (const Var* v = as<Var>(&e.expr())) {
 
@@ -314,12 +329,66 @@ elab_iff(Elaborator& elab, const Binary_tree& tree) {
   return elab_binary<make_iff>(elab, tree, *elab.bool_def);
 }
 
+// A helper class for managing scopes during elaboration. This
+// creates a new environment that is pushed onto the stack when
+// constructed and popped when it's destroyed.
+struct Quantifier_scope {
+  Quantifier_scope(Elaborator& e)
+    : elab(e), env() { elab.push(env); }
+
+  ~Quantifier_scope() { elab.pop(); }
+
+  Elaborator& elab;
+  Environment env;
+};
+
+// Helper functions for creating elaborations
+Elaboration
+make_forall(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_forall(as<Bind>(e1.expr()), e2.expr()), elab.bool_type };
+}
+
+Elaboration
+make_exists(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_exists(as<Bind>(e1.expr()), e2.expr()), elab.bool_type };
+}
+
+template<Elaboration (*Make)(Elaborator&, Elaboration, Elaboration)>
+  Elaboration
+  elab_quantifier(Elaborator& elab, const Binary_tree& tree) {
+    // Elaborate the binding. If it failed, bail out. Otherwise,
+    // the syntax guarantees that e1 is a bind expression.
+    Elaboration e1 = elab(tree.left());
+    if (not e1)
+      return e1;
+    const Bind& b = as<Bind>(e1.expr());
+
+    // Create a new environment, push it onto the stack
+    // and register the binding.
+    Quantifier_scope scope = elab;
+    elab.declare(b.name(), b.type());
+
+    // Now, elaborate the 2nd expression and ensure that it
+    // is a boolean expression.
+    if (Elaboration e2 = elab(tree.right()))
+      if (check_type(elab, e2, *elab.bool_def))
+        return Make(elab, e1, e2);
+    return {};
+  }
+
+Elaboration
+elab_forall(Elaborator& elab, const Binary_tree& tree) {
+  return elab_quantifier<make_forall>(elab, tree);
+}
+
+Elaboration
+elab_exists(Elaborator& elab, const Binary_tree& tree) {
+  return elab_quantifier<make_exists>(elab, tree);
+}
+
 Elaboration
 elab_binary(Elaborator& elab, const Binary_tree& tree) {
   switch (tree.op().type) {
-  case Colon_tok:
-    return elab_bind(elab, tree);
-
   // Arithmetic operators
   case Plus_tok: return elab_add(elab, tree);
   case Minus_tok: return elab_sub(elab, tree);
@@ -340,8 +409,9 @@ elab_binary(Elaborator& elab, const Binary_tree& tree) {
   case Iff_tok: return elab_iff(elab, tree);
 
   // Quantifiers
-  case Forall_tok:
-  case Exists_tok:
+  case Colon_tok: return elab_bind(elab, tree);
+  case Forall_tok: return elab_forall(elab, tree);
+  case Exists_tok: return elab_exists(elab, tree);
 
   default:
     assert(false); // Unreachable

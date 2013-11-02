@@ -23,15 +23,17 @@ main() {
   // Parse the token stream
   Parser parser(toks);
   const Tree* ast = parser();
-  if (ast)
-    cout << "syntax: " << sexpr(*ast) << '\n';
-  else
+  if (not ast) {
     cout << "invalid syntax\n";
+    return -1;
+  }
+  cout << "syntax: " << sexpr(*ast) << '\n';
 
   Elaborator elab;
   Elaboration prog = elab(*ast);
-  if (prog)
-    cout << "abstract: " << prog.expr() << '\n';
-  else
+  if (not prog) {
     cout << "ill-formed program\n";
+    return -1;
+  }
+  cout << "abstract: " << prog.expr() << '\n';
 }

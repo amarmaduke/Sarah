@@ -3,6 +3,7 @@
 
 #include "utility/Diagnostics.hpp"
 #include "Parser.hpp"
+#include "Sexpr.hpp"
 
 namespace sarah {
 
@@ -474,10 +475,10 @@ parse_quanitifier(Parser& p) {
 const Tree*
 parse_quantified_expr(Parser& p) {
   if (const Token* q = parse_quanitifier(p))
-    if (const Tree* n = parse_identifier(p))
+    if (const Tree* b = parse_expected<parse_bind_expr>(p))
       if (expect(p, Dot_tok))
         if (const Tree* e = parse_expr(p))
-          return &p.make_binary(*q, *n, *e);
+          return &p.make_binary(*q, *b, *e);
   return nullptr;
 }
 
