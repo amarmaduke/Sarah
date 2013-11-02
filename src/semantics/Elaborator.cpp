@@ -167,6 +167,153 @@ elab_bind(Elaborator& elab, const Binary_tree& tree) {
   return {};
 }
 
+// Helper functions for creating elaborations
+Elaboration
+make_add(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_add(e1.expr(), e2.expr()), elab.int_type};
+}
+
+Elaboration
+make_sub(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_add(e1.expr(), e2.expr()), elab.int_type};
+}
+
+Elaboration
+make_mul(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_add(e1.expr(), e2.expr()), elab.int_type};
+}
+
+Elaboration
+make_eq(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_eq(e1.expr(), e2.expr()), elab.bool_type};  
+}
+
+Elaboration
+make_ne(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_ne(e1.expr(), e2.expr()), elab.bool_type};  
+}
+
+Elaboration
+make_lt(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_lt(e1.expr(), e2.expr()), elab.bool_type};  
+}
+
+Elaboration
+make_gt(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_gt(e1.expr(), e2.expr()), elab.bool_type};  
+}
+
+Elaboration
+make_le(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_le(e1.expr(), e2.expr()), elab.bool_type};  
+}
+
+Elaboration
+make_ge(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_ge(e1.expr(), e2.expr()), elab.bool_type};  
+}
+
+Elaboration
+make_and(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_and(e1.expr(), e2.expr()), elab.bool_type};  
+}
+
+Elaboration
+make_or(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_or(e1.expr(), e2.expr()), elab.bool_type};  
+}
+
+Elaboration
+make_imp(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_imp(e1.expr(), e2.expr()), elab.bool_type};  
+}
+
+Elaboration
+make_iff(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_iff(e1.expr(), e2.expr()), elab.bool_type};  
+}
+
+// A helper function for elaborating binary expressions. Here, both 
+// subexpressions must have type t.
+template<Elaboration(*Make)(Elaborator&, Elaboration, Elaboration)>
+  Elaboration
+  elab_binary(Elaborator& elab, const Binary_tree& tree, const Def& t) {
+    if (Elaboration e1 = elab(tree.left()))
+      if (Elaboration e2 = elab(tree.right()))
+        if (check_type(elab, e1, t) and check_type(elab, e2, t))
+          return Make(elab, e1, e2);
+    return {};
+  }
+
+
+Elaboration
+elab_add(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_add>(elab, tree, *elab.int_def);
+}
+
+Elaboration
+elab_sub(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_sub>(elab, tree, *elab.int_def);
+}
+
+// TODO: I'm not sure what to do with this. Maybe we should
+// automatically expand it and not actually represent multiplication
+// in the abstract language.
+Elaboration
+elab_mul(Elaborator& elab, const Binary_tree& tree) {
+  return {};
+}
+
+Elaboration
+elab_eq(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_eq>(elab, tree, *elab.int_def);
+}
+
+Elaboration
+elab_ne(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_ne>(elab, tree, *elab.int_def);
+}
+
+Elaboration
+elab_lt(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_lt>(elab, tree, *elab.int_def);
+}
+
+Elaboration
+elab_gt(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_gt>(elab, tree, *elab.int_def);
+}
+
+Elaboration
+elab_le(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_le>(elab, tree, *elab.int_def);
+}
+
+Elaboration
+elab_ge(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_ge>(elab, tree, *elab.int_def);
+}
+
+Elaboration
+elab_and(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_and>(elab, tree, *elab.bool_def);
+}
+
+Elaboration
+elab_or(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_or>(elab, tree, *elab.bool_def);
+}
+
+Elaboration
+elab_imp(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_imp>(elab, tree, *elab.bool_def);
+}
+
+Elaboration
+elab_iff(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_iff>(elab, tree, *elab.bool_def);
+}
+
 Elaboration
 elab_binary(Elaborator& elab, const Binary_tree& tree) {
   switch (tree.op().type) {
@@ -174,25 +321,25 @@ elab_binary(Elaborator& elab, const Binary_tree& tree) {
     return elab_bind(elab, tree);
 
   // Arithmetic operators
-  case Plus_tok:
-  case Minus_tok:
-  case Star_tok:
+  case Plus_tok: return elab_add(elab, tree);
+  case Minus_tok: return elab_sub(elab, tree);
+  case Star_tok: return elab_mul(elab, tree);
 
   // Relational operators
-  case Equal_equal_tok:
-  case Not_equal_tok:
-  case Less_tok:
-  case Greater_tok:
-  case Less_equal_tok:
-  case Greater_equal_tok:
+  case Equal_equal_tok: return elab_eq(elab, tree);
+  case Not_equal_tok: return elab_ne(elab, tree);
+  case Less_tok: return elab_lt(elab, tree);
+  case Greater_tok: return elab_gt(elab, tree);
+  case Less_equal_tok: return elab_le(elab, tree);
+  case Greater_equal_tok: return elab_ge(elab, tree);
 
   // Logical operators
-  case And_tok:
-  case Or_tok:
-  case Imp_tok:
-  case Iff_tok:
+  case And_tok: return elab_and(elab, tree);
+  case Or_tok: return elab_or(elab, tree);
+  case Imp_tok: return elab_imp(elab, tree);
+  case Iff_tok: return elab_iff(elab, tree);
 
-  // Quantiifers
+  // Quantifiers
   case Forall_tok:
   case Exists_tok:
 
