@@ -101,7 +101,7 @@ symbol(Lexer& lex, const char* sym) {
 }
 
 // -------------------------------------------------------------------------- //
-// Keywords 
+// Keywords
 
 // Define a keyword table.
 using Keyword_table = std::unordered_map<String, Token_type> ;
@@ -250,12 +250,12 @@ tokenize(Lexer& lex) {
       if (std::size_t n = space(lex))
         consume(lex, n);
       break;
-    
+
     case '\n':
       if (std::size_t n = newline(lex))
         consume_newline(lex, n);
       break;
-    
+
     case '(':
       save_unigraph(lex, Left_paren_tok);
       break;
@@ -281,13 +281,21 @@ tokenize(Lexer& lex) {
 
     case '!':
       if (symbol(lex, "!="))
-        save_digraph(lex, Not_equal_tok); 
+        save_digraph(lex, Not_equal_tok);
       else
         invalid_char(lex);
       break;
 
     case '+':
       save_unigraph(lex, Plus_tok);
+      break;
+
+    case '*':
+      save_unigraph(lex, Star_tok);
+      break;
+
+    case '/':
+      save_unigraph(lex, Div_tok);
       break;
 
     case '-':
