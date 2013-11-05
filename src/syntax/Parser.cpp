@@ -294,7 +294,7 @@ parse_multiplicative_op(Parser& p) {
   case Star_tok:
   case Div_tok:
     return consume(p);
-  default
+  default:
     return nullptr;
   }
 }
