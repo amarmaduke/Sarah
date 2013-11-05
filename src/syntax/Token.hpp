@@ -14,7 +14,7 @@ namespace sarah {
 enum Token_type {
   // Non-language tokens
   Error_tok,
-  
+
   // Punctuators
   Left_paren_tok,    // (
   Right_paren_tok,   // )
@@ -25,6 +25,7 @@ enum Token_type {
   Plus_tok,          // +
   Minus_tok,         // -
   Star_tok,          // *
+  Div_tok,           // /
 
   // Tokens for relational operators
   Equal_equal_tok,   // ==
@@ -72,7 +73,7 @@ struct Token {
   Token(Token_type t, Location l)
     : type(t), loc(l)
   { }
-  
+
   Token(Token_type t, String s, Location l)
     : type(t), spell(s), loc(l)
   { }

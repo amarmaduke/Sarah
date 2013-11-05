@@ -15,10 +15,11 @@ spelling(Token_type t)
   case Colon_tok: return ":";
   case Dot_tok: return ".";
 
-  // Tokens for arithmetic operaitos
+  // Tokens for arithmetic operators
   case Plus_tok: return "+";
   case Minus_tok: return "-";
   case Star_tok: return "*";
+  case Div_tok: return "/";
 
   // Tokens for relational operators
   case Equal_equal_tok: return "==";
