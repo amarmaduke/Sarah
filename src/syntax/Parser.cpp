@@ -15,7 +15,7 @@ peek(const Parser& p) { return &*p.current; }
 const Token*
 lookahead(const Parser& p, std::size_t n) {
   if (p.tokens.end() - p.current > std::ptrdiff_t(n))
-    return &*(p.current + n); 
+    return &*(p.current + n);
   else
     return nullptr;
 }
@@ -23,12 +23,12 @@ lookahead(const Parser& p, std::size_t n) {
 // Returns true if the next token has type t.
 inline bool
 next_token_is(const Parser& p, Token_type t) {
-  return peek(p)->type == t; 
+  return peek(p)->type == t;
 }
 
 // Returns true if the nth token has type t.
 inline bool
-nth_token_is(const Parser& p, std::size_t n, Token_type t) { 
+nth_token_is(const Parser& p, std::size_t n, Token_type t) {
   if (const Token* tok = lookahead(p, n))
     return tok->type == t;
   else
@@ -39,7 +39,7 @@ nth_token_is(const Parser& p, std::size_t n, Token_type t) {
 const Location&
 location(const Parser& p) { return peek(p)->loc; }
 
-// Return a diagnostic stream indicating an error at the current 
+// Return a diagnostic stream indicating an error at the current
 // position in thje program source.
 inline std::ostream&
 error(const Parser& p) { return error(location(p)); }
@@ -91,7 +91,7 @@ template<Production Prod>
   parse_expected(Parser& p) {
     if (const Tree* n = Prod(p))
       return n;
-    else 
+    else
       return nullptr;
   }
 
@@ -246,7 +246,7 @@ parse_type(Parser& p) {
 // Parse a primary expression.
 //
 // primary-expr ::= default
-//                | boolean-lit 
+//                | boolean-lit
 //                | integer-lit
 //                | identifier
 //                | '(' expression ')'
@@ -290,10 +290,13 @@ parse_sign_expr(Parser& p) {
 //     multiplicative-op ::= '*' | '/' | '%'
 inline const Token*
 parse_multiplicative_op(Parser& p) {
-  if (peek(p)->type == Star_tok)
+  switch(peek(p)->type) {
+  case Star_tok:
+  case Div_tok:
     return consume(p);
-  else
+  default
     return nullptr;
+  }
 }
 
 // Parse a multiplicative expression.
@@ -304,7 +307,7 @@ parse_multiplicative_expr(Parser& p) {
   return parse_left<parse_multiplicative_op, parse_sign_expr>(p);
 }
 
-// Parse and additive operator.
+// Parse an additive operator.
 //
 //     additive-op ::= '+' | '-'
 inline const Token*
@@ -326,7 +329,7 @@ parse_additive_expr(Parser& p) {
   return parse_left<parse_additive_op, parse_multiplicative_expr>(p);
 }
 
-// Parsse an relational ordering operator.
+// Parse a relational ordering operator.
 //
 //     ordering-op ::= '<' | '>' | '<=' | '>='
 inline const Token*
@@ -382,8 +385,8 @@ parse_not_op(Parser& p) { return accept(p, Not_tok); }
 //     not-expr ::= unary(not-op, equality-expr)
 const Tree*
 parse_not_expr(Parser& p) {
-  return parse_unary<parse_not_op, 
-                     parse_not_expr, 
+  return parse_unary<parse_not_op,
+                     parse_not_expr,
                      parse_equality_expr>(p);
 }
 
@@ -425,8 +428,8 @@ parse_implication_op(Parser& p) { return accept(p, Imp_tok); }
 //
 //    implication-expr ::= right(implication-op, logical_or_expr)
 const Tree*
-parse_implication_expr(Parser& p) { 
-  return parse_right<parse_implication_op, 
+parse_implication_expr(Parser& p) {
+  return parse_right<parse_implication_op,
                      parse_implication_expr,
                      parse_or_expr>(p);
 }
@@ -486,11 +489,11 @@ parse_quantified_expr(Parser& p) {
 //
 //     expr ::= quantified-expr | iff-expression
 const Tree*
-parse_expr(Parser& p) { 
+parse_expr(Parser& p) {
   if (const Tree* t = parse_quantified_expr(p))
     return t;
   else
-    return parse_iff_expr(p); 
+    return parse_iff_expr(p);
 }
 
 // -------------------------------------------------------------------------- //
