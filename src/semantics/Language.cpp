@@ -51,13 +51,13 @@ Environment::lookup(String str) const {
 // allowed. Maybe we need a can_declare/can_define predicate that guarantees
 // the viability of the operation.
 
-// Add n : t to the current binding environment. 
+// Add n : t to the current binding environment.
 const Decl&
 Stack::declare(const Id& n, const Type& t) {
   return top().declare(n, t);
 }
 
-// Add n : t -> e to the current binding environment. 
+// Add n : t -> e to the current binding environment.
 const Def&
 Stack::define(const Id& n, const Type& t, const Expr& e) {
   return top().define(n, t, e);
@@ -112,6 +112,7 @@ same_expr(const Expr& a, const Expr& b) {
     void visit(const Add& e) { }
     void visit(const Sub& e) { }
     void visit(const Mul& e) { }
+    void visit(const Div& e) { }
     void visit(const Neg& e) { }
     void visit(const Pos& e) { }
 
@@ -133,7 +134,7 @@ same_expr(const Expr& a, const Expr& b) {
     void visit(const Forall& e) { }
 
     void visit_type(const Type& t) { result = same_type(t, as<Type>(expr)); }
-    
+
     const Expr& expr;
     bool result;
   };
@@ -156,7 +157,7 @@ same(const Expr& a, const Expr& b) {
 // -------------------------------------------------------------------------- //
 // Visitor
 
-void 
+void
 Expr::Visitor::visit_expr(const Expr& e) { }
 
 void
@@ -179,6 +180,9 @@ Expr::Visitor::visit(const Sub& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Mul& e) { visit_expr(e); }
+
+void
+Expr::Visitor::visit(const Div& e) { visit_expr(e); }
 
 void
 Expr::Visitor::visit(const Neg& e) { visit_expr(e); }
@@ -228,13 +232,13 @@ Expr::Visitor::visit(const Exists& e) { visit_expr(e); }
 void
 Expr::Visitor::visit(const Forall& e) { visit_expr(e); }
 
-void 
+void
 Expr::Visitor::visit_type(const Type& t) { visit_expr(t); }
 
-void 
+void
 Expr::Visitor::visit(const Bool_type& t) { visit_type(t); }
 
-void 
+void
 Expr::Visitor::visit(const Int_type& t) { visit_type(t); }
 
 void
@@ -268,13 +272,18 @@ Expr::Factory::make_sub(const Expr& l, const Expr& r) {
 }
 
 Mul&
-Expr::Factory::make_mul(const Int& n, const Expr& e) { 
+Expr::Factory::make_mul(const Int& n, const Expr& e) {
   return muls.make(n, e);
 }
 
+Div&
+Expr::Factory::make_div(const Int& n, const Expr& e) {
+  return divs.make(n, e);
+}
+
 Neg&
-Expr::Factory::make_neg(const Expr& e) { 
-  return negs.make(e); 
+Expr::Factory::make_neg(const Expr& e) {
+  return negs.make(e);
 }
 
 Pos&
@@ -333,8 +342,8 @@ Expr::Factory::make_iff(const Expr& l, const Expr& r) {
 }
 
 Not&
-Expr::Factory::make_not(const Expr& e) { 
-  return nots.make(e); 
+Expr::Factory::make_not(const Expr& e) {
+  return nots.make(e);
 }
 
 Bind&
@@ -364,7 +373,7 @@ Expr::Factory::make_kind_type() { return kind_type; }
 // -------------------------------------------------------------------------- //
 // Context
 
-Context::Context() 
+Context::Context()
   : bool_type(make_bool_type())
   , int_type(make_int_type())
   , kind_type(make_kind_type())

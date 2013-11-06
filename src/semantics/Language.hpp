@@ -19,6 +19,7 @@ struct Int;
 struct Add;
 struct Sub;
 struct Mul;
+struct Div;
 struct Neg;
 struct Pos;
 struct Eq;
@@ -77,7 +78,7 @@ struct Environment : std::map<String, Decl*> {
   // Binding interface
   const Decl& declare(const Id&, const Type&);
   const Def& define(const Id&, const Type&, const Expr&);
-  
+
   // Symbol lookup
   const Decl* lookup(String) const;
   bool has_binding(String s) { return lookup(s); }
@@ -144,11 +145,11 @@ struct Id : Atom<String>, Expr_impl<Id> {
 };
 
 
-// An integer literal. 
+// An integer literal.
 struct Int : Atom<Integer>, Expr_impl<Int> {
   Int(Integer n)
     : Atom<Integer>(n) { }
-  
+
   const Integer& value() const { return first(); }
 };
 
@@ -205,11 +206,17 @@ struct Sub : Binary_impl<Sub> {
     : Binary_impl<Sub>(l, r) { }
 };
 
-// Repeated addition. 
+// Repeated addition.
 struct Mul : Structure<Int, Expr>, Expr_impl<Mul> {
   Mul(const Int& n, const Expr& e)
     : Structure<Int, Expr>(n, e) { }
 };
+
+// Divisibility
+struct Div : Structure<Int, Expr>, Expr_impl<Div> {
+  Div(const Int& n, const Expr& e)
+    : Structure<Int, Expr>(n, e) { }
+}
 
 // Arithmetic negation, `-z`.
 struct Neg : Unary_impl<Neg> {
@@ -347,6 +354,7 @@ struct Expr::Visitor {
   virtual void visit(const Add&);
   virtual void visit(const Sub&);
   virtual void visit(const Mul&);
+  virtual void visit(const Div&);
   virtual void visit(const Neg&);
   virtual void visit(const Pos&);
 
@@ -394,6 +402,7 @@ struct Expr::Factory {
   Add& make_add(const Expr&, const Expr&);
   Sub& make_sub(const Expr&, const Expr&);
   Mul& make_mul(const Int&, const Expr&);
+  Div& make_div(const Int&, const Expr&);
   Neg& make_neg(const Expr&);
   Pos& make_pos(const Expr&);
 
@@ -432,6 +441,7 @@ struct Expr::Factory {
   Basic_factory<Add> adds;
   Basic_factory<Sub> subs;
   Basic_factory<Mul> muls;
+  Basic_factory<Div> divs;
   Basic_factory<Neg> negs;
   Basic_factory<Pos> poss;
   Basic_factory<Eq> eqs;
@@ -458,10 +468,10 @@ struct Expr::Factory {
 // -------------------------------------------------------------------------- //
 // Context
 
-// The Context class provides facilities for constructing well-formed 
-// programs. 
+// The Context class provides facilities for constructing well-formed
+// programs.
 //
-// TODO: This may be more appropriately called a program construction 
+// TODO: This may be more appropriately called a program construction
 // context. We should have other contexts: elaboration context,
 // evaluation context, etc.
 struct Context : Stack, Expr::Factory {

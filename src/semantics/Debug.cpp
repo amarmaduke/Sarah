@@ -62,6 +62,7 @@ print_expr(std::ostream& os, const Expr& e) {
     void visit(const Add& e) { print_node(os, "add", e); }
     void visit(const Sub& e) { print_node(os, "sub", e); }
     void visit(const Mul& e) { print_node(os, "mul", e); }
+    void visit(const Div& e) { print_node(os, "div", e); }
     void visit(const Neg& e) { print_node(os, "neg", e); }
     void visit(const Pos& e) { print_node(os, "pos", e); }
 
