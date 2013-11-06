@@ -193,9 +193,6 @@ make_sub(Elaborator& elab, Elaboration e1, Elaboration e2) {
   return {elab.make_sub(e1.expr(), e2.expr()), elab.int_type};
 }
 
-// TODO: bad_cast to Int within as<Int> causes a crash. Not entirely sure
-// why this use of as crashes with malformed input but it handles as<Bind>
-// without crashing on input similar to "exists x:x. x == 1"
 Elaboration
 make_mul(Elaborator& elab, Elaboration e1, Elaboration e2) {
   return {elab.make_mul(as<Int>(e1.expr()), e2.expr()), elab.int_type};
