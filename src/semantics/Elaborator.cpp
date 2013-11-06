@@ -268,6 +268,20 @@ template<Elaboration(*Make)(Elaborator&, Elaboration, Elaboration)>
     return {};
   }
 
+// A helper function for elaborating multiplicative expressions. Here, the
+// first expression must be Int, the second type t.
+// TODO: Is this an appropriate place to prevent the crash?
+template<Elaboration(*Make)(Elaborator&, Elaboration, Elaboration)>
+  Elaboration
+  elab_multiplicative(Elaborator& elab, const Binary_tree& tree, const Def& t) {
+    if (Elaboration e1 = elab(tree.left()))
+      if (Elaboration e2 = elab(tree.right()))
+        if (is<Int>(e1.expr()) and check_type(elab, e2, t))
+          return Make(elab, e1, e2);
+    return {};
+  }
+
+
 
 Elaboration
 elab_add(Elaborator& elab, const Binary_tree& tree) {
@@ -284,13 +298,13 @@ elab_sub(Elaborator& elab, const Binary_tree& tree) {
 // in the abstract language.
 Elaboration
 elab_mul(Elaborator& elab, const Binary_tree& tree) {
-  return elab_binary<make_mul>(elab, tree, *elab.int_def);
+  return elab_multiplicative<make_mul>(elab, tree, *elab.int_def);
 }
 
 // Test implementation
 Elaboration
 elab_div(Elaborator& elab, const Binary_tree& tree) {
-  return elab_binary<make_div>(elab, tree, *elab.int_def);
+  return elab_multiplicative<make_div>(elab, tree, *elab.int_def);
 }
 
 Elaboration
