@@ -20,5 +20,5 @@ template<typename C, typename T>
   }
 
 } // namespace sarah
-1
+
 #endif

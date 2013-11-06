@@ -56,7 +56,7 @@ Elaboration
 elab_terminal(Elaborator& elab, const Terminal_tree& tree) {
   const Token& tok = tree.token();
   switch (tok.type) {
-  
+
   // Identifiers and literals
   case Identifier_tok: return elab_var(elab, tok);
   case True_tok: return elab_bool(elab, true);
@@ -159,7 +159,7 @@ elab_bind(Elaborator& elab, const Binary_tree& tree) {
 
       // Ensure that we have a definition
       if (const Def* d = as<Def>(&v->decl())) {
-        
+
         // Check that the definition actually designates a type.
         if (const Type* t = as<Type>(&d->init))
           return {elab.make_bind(n, *t), *t};
@@ -169,7 +169,7 @@ elab_bind(Elaborator& elab, const Binary_tree& tree) {
 
       // If we didn't have a definition, then the type is incomplete.
       // This will never happen in this language.
-      error() << "declaring '" << n << "' with incomplete type '" 
+      error() << "declaring '" << n << "' with incomplete type '"
               << v->decl().name << "'\n";
       return {};
     }
@@ -199,56 +199,61 @@ make_mul(Elaborator& elab, Elaboration e1, Elaboration e2) {
 }
 
 Elaboration
+make_div(Elaborator& elab, Elaboration e1, Elaboration e2) {
+  return {elab.make_add(e1.expr(), e2.expr()), elab.int_type};
+}
+
+Elaboration
 make_eq(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_eq(e1.expr(), e2.expr()), elab.bool_type};  
+  return {elab.make_eq(e1.expr(), e2.expr()), elab.bool_type};
 }
 
 Elaboration
 make_ne(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_ne(e1.expr(), e2.expr()), elab.bool_type};  
+  return {elab.make_ne(e1.expr(), e2.expr()), elab.bool_type};
 }
 
 Elaboration
 make_lt(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_lt(e1.expr(), e2.expr()), elab.bool_type};  
+  return {elab.make_lt(e1.expr(), e2.expr()), elab.bool_type};
 }
 
 Elaboration
 make_gt(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_gt(e1.expr(), e2.expr()), elab.bool_type};  
+  return {elab.make_gt(e1.expr(), e2.expr()), elab.bool_type};
 }
 
 Elaboration
 make_le(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_le(e1.expr(), e2.expr()), elab.bool_type};  
+  return {elab.make_le(e1.expr(), e2.expr()), elab.bool_type};
 }
 
 Elaboration
 make_ge(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_ge(e1.expr(), e2.expr()), elab.bool_type};  
+  return {elab.make_ge(e1.expr(), e2.expr()), elab.bool_type};
 }
 
 Elaboration
 make_and(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_and(e1.expr(), e2.expr()), elab.bool_type};  
+  return {elab.make_and(e1.expr(), e2.expr()), elab.bool_type};
 }
 
 Elaboration
 make_or(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_or(e1.expr(), e2.expr()), elab.bool_type};  
+  return {elab.make_or(e1.expr(), e2.expr()), elab.bool_type};
 }
 
 Elaboration
 make_imp(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_imp(e1.expr(), e2.expr()), elab.bool_type};  
+  return {elab.make_imp(e1.expr(), e2.expr()), elab.bool_type};
 }
 
 Elaboration
 make_iff(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_iff(e1.expr(), e2.expr()), elab.bool_type};  
+  return {elab.make_iff(e1.expr(), e2.expr()), elab.bool_type};
 }
 
-// A helper function for elaborating binary expressions. Here, both 
+// A helper function for elaborating binary expressions. Here, both
 // subexpressions must have type t.
 template<Elaboration(*Make)(Elaborator&, Elaboration, Elaboration)>
   Elaboration
@@ -276,7 +281,14 @@ elab_sub(Elaborator& elab, const Binary_tree& tree) {
 // in the abstract language.
 Elaboration
 elab_mul(Elaborator& elab, const Binary_tree& tree) {
-  return {};
+  return elab_binary<make_mul>(elab, tree, *elab.int_def);
+//return {};
+}
+
+// Test implementation
+Elaboration
+elab_div(Elaborator& elab, const Binary_tree& tree) {
+  return elab_binary<make_div>(elab, tree, *elab.int_def);
 }
 
 Elaboration
@@ -393,6 +405,7 @@ elab_binary(Elaborator& elab, const Binary_tree& tree) {
   case Plus_tok: return elab_add(elab, tree);
   case Minus_tok: return elab_sub(elab, tree);
   case Star_tok: return elab_mul(elab, tree);
+  case Div_tok: return elab_div(elab, tree);
 
   // Relational operators
   case Equal_equal_tok: return elab_eq(elab, tree);
@@ -427,18 +440,18 @@ Elaborator::operator()(const Tree& tree) {
     V(Elaborator& e)
       : elab(e) { }
 
-    void visit(const Enclosed_tree& tree) { 
-      result = elab_enclosed(elab, tree); 
+    void visit(const Enclosed_tree& tree) {
+      result = elab_enclosed(elab, tree);
     }
-    
+
     void visit(const Terminal_tree& tree) {
       result = elab_terminal(elab, tree);
     }
-    
+
     void visit(const Unary_tree& tree) {
       result = elab_unary(elab, tree);
     }
-    
+
     void visit(const Binary_tree& tree) {
       result = elab_binary(elab, tree);
     }

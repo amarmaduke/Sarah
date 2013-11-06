@@ -216,7 +216,7 @@ struct Mul : Structure<Int, Expr>, Expr_impl<Mul> {
 struct Div : Structure<Int, Expr>, Expr_impl<Div> {
   Div(const Int& n, const Expr& e)
     : Structure<Int, Expr>(n, e) { }
-}
+};
 
 // Arithmetic negation, `-z`.
 struct Neg : Unary_impl<Neg> {
