@@ -96,6 +96,33 @@ same_var(const Var& a, const Var& b) { return &a.decl() == &b.decl(); }
 inline bool
 same_type(const Type& a, const Type& b) { return &a == &b; }
 
+// Here we're saying that two binary exprs are the same if they are identical
+inline bool
+same_binary(const Binary& a, const Binary& b) {
+  return same(a.left(),b.left()) and same(a.right(),b.right());
+}
+
+inline bool
+same_multiplicative(const Structure<Int,Expr>& a,
+                    const Structure<Int,Expr>& b) {
+  return same(a.first(),b.first()) and same(a.second(),b.second());
+}
+
+inline bool
+same_bind(const Structure<Id,Type>& a, const Structure<Id,Type>& b) {
+  return same(a.first(),b.first()) and same(a.second(),b.second());
+}
+
+inline bool
+same_quantifier(const Structure<Bind,Expr>& a, const Structure<Bind,Expr>& b) {
+  return same(a.first(),b.first()) and same(a.second(),b.second());
+}
+
+inline bool
+same_unary(const Unary& a, const Unary& b) {
+  return same(a.arg(),b.arg());
+}
+
 bool
 same_expr(const Expr& a, const Expr& b) {
   struct V : Expr::Visitor {
@@ -109,29 +136,33 @@ same_expr(const Expr& a, const Expr& b) {
 
     // TODO: Implement these functions.
 
-    void visit(const Add& e) { }
-    void visit(const Sub& e) { }
-    void visit(const Mul& e) { }
-    void visit(const Div& e) { }
-    void visit(const Neg& e) { }
-    void visit(const Pos& e) { }
+    void visit(const Add& e) { result = same_binary(e,as<Add>(expr)); }
+    void visit(const Sub& e) { result = same_binary(e,as<Sub>(expr)); }
+    void visit(const Mul& e) { result = same_multiplicative(e,as<Mul>(expr)); }
+    void visit(const Div& e) { result = same_multiplicative(e,as<Div>(expr)); }
+    void visit(const Neg& e) { result = same_unary(e,as<Neg>(expr)); }
+    void visit(const Pos& e) { result = same_unary(e,as<Pos>(expr));}
 
-    void visit(const Eq& e) { }
-    void visit(const Ne& e) { }
-    void visit(const Lt& e) { }
-    void visit(const Gt& e) { }
-    void visit(const Le& e) { }
-    void visit(const Ge& e) { }
+    void visit(const Eq& e) { result = same_binary(e,as<Eq>(expr)); }
+    void visit(const Ne& e) { result = same_binary(e,as<Ne>(expr)); }
+    void visit(const Lt& e) { result = same_binary(e,as<Lt>(expr)); }
+    void visit(const Gt& e) { result = same_binary(e,as<Gt>(expr)); }
+    void visit(const Le& e) { result = same_binary(e,as<Le>(expr)); }
+    void visit(const Ge& e) { result = same_binary(e,as<Ge>(expr)); }
 
-    void visit(const And& e) { }
-    void visit(const Or& e) { }
-    void visit(const Imp& e) { }
-    void visit(const Iff& e) { }
-    void visit(const Not& e) { }
-    void visit(const Bind& e) { }
+    void visit(const And& e) { result = same_binary(e,as<And>(expr)); }
+    void visit(const Or& e) { result = same_binary(e,as<Or>(expr)); }
+    void visit(const Imp& e) { result = same_binary(e,as<Imp>(expr)); }
+    void visit(const Iff& e) { result = same_binary(e,as<Iff>(expr)); }
+    void visit(const Not& e) { result = same_unary(e,as<Not>(expr));}
+    void visit(const Bind& e) { result = same_bind(e,as<Bind>(expr));}
 
-    void visit(const Exists& e) { }
-    void visit(const Forall& e) { }
+    void visit(const Exists& e) {
+      result = same_quantifier(e,as<Exists>(expr));
+    }
+    void visit(const Forall& e) {
+      result = same_quantifier(e,as<Forall>(expr));
+    }
 
     void visit_type(const Type& t) { result = same_type(t, as<Type>(expr)); }
 

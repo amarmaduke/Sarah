@@ -267,7 +267,8 @@ template<Elaboration(*Make)(Elaborator&, Elaboration, Elaboration)>
 
 // A helper function for elaborating multiplicative expressions. Here, the
 // first expression must be Int, the second type t.
-// TODO: Is this an appropriate place to prevent the crash?
+// This functionality is going to be maintained. The desired semantic is
+// n | x for numeral n.
 template<Elaboration(*Make)(Elaborator&, Elaboration, Elaboration)>
   Elaboration
   elab_multiplicative(Elaborator& elab, const Binary_tree& tree, const Def& t) {
@@ -290,15 +291,11 @@ elab_sub(Elaborator& elab, const Binary_tree& tree) {
   return elab_binary<make_sub>(elab, tree, *elab.int_def);
 }
 
-// TODO: I'm not sure what to do with this. Maybe we should
-// automatically expand it and not actually represent multiplication
-// in the abstract language.
 Elaboration
 elab_mul(Elaborator& elab, const Binary_tree& tree) {
   return elab_multiplicative<make_mul>(elab, tree, *elab.int_def);
 }
 
-// Test implementation
 Elaboration
 elab_div(Elaborator& elab, const Binary_tree& tree) {
   return elab_multiplicative<make_div>(elab, tree, *elab.int_def);
