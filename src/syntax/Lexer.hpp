@@ -13,7 +13,13 @@ struct Lexer {
     : loc(f), head(f.begin()), tail(f.end())
   { }
 
+  Lexer(std::string& s)
+    : head(s.begin()), tail(s.end())
+  { }
+
   const Token_list& operator()();
+
+  //const Token_list& tokenize_from_string(std::string& s);
 
   Location loc;
   String::iterator head;

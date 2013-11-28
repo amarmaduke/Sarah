@@ -351,5 +351,9 @@ Lexer::operator()() {
   return tokens;
 }
 
+const Token_list& tokenize_from_string(std::string& s) {
+
+}
+
 
 } // namespace sarah

@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <fstream>
 
 #include <syntax/Lexer.hpp>
 #include <syntax/Parser.hpp>
@@ -23,33 +24,88 @@ using namespace sarah;
   to start it off those are the assumptions made.
 */
 struct RuleSystem {
-	vector<Elaboration*> expr_space;
+  vector<Elaboration> language;
 
-	RuleSystem(vector<Elaboration*> axioms)
-	: expr_space(axioms)
-	{}
+  RuleSystem(vector<Elaboration> axioms)
+  : language(axioms)
+  {}
 
-	// Tries every implication rule to attempt to infer the antecedent.
-	bool expand()
-	{
-		return true;
-	}
+  // Tries every implication rule to attempt to infer the antecedent.
+  bool expand()
+  {
+    return true;
+  }
 
   // Will expand until Expr e is found or the system has reached all inferable
   // expressions.
-	bool search(Elaboration& e)
-	{
-		return true;
-	}
+  bool search(Elaboration& e)
+  {
+    return true;
+  }
+
+  void print()
+  {
+    for(unsigned int i = 0; i < language.size(); ++i)
+    {
+      cout << language[i].expr() << endl;
+    }
+  }
 };
+
+Elaboration elaborate_string(string input)
+{
+  Lexer lex(input);
+  Token_list toks = lex();
+
+  Parser parser(toks);
+  const Tree* ast = parser();
+  if (not ast) {
+    cout << "invalid syntax\n";
+  }
+  cout << "syntax: " << sexpr(*ast) << '\n';
+
+  Elaborator elab;
+  Elaboration prog = elab(*ast);
+  if (not prog) {
+    cout << "ill-formed program\n";
+  }
+  cout << "abstract: " << prog.expr() << '\n';
+
+  return prog;
+}
+
+int rule_system() {
+
+  ifstream f("axioms");
+
+  vector<Elaboration> elaborations;
+  vector<Elaborator> elabs;
+
+  while(!f.eof()) {
+    string input;
+    getline(f,input);
+
+    if(input.find_first_not_of(' ') == string::npos)
+      continue;
+
+    elaborations.push_back(elaborate_string(input));
+  }
+
+  cout << elaborations[0].expr() << '\n';
+
+  return 0;
+}
 
 
 int
 main() {
+  rule_system();
+  return 0;
+  /*
   File f(cin);
 
   // Get the list of tokens.
-  Lexer lex(f);
+  Lexer lex(test);
   Token_list toks = lex();
 
   // Parse the token stream
@@ -68,4 +124,5 @@ main() {
     return -1;
   }
   cout << "abstract: " << prog.expr() << '\n';
+  //*/
 }
