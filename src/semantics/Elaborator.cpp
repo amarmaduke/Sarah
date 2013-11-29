@@ -367,12 +367,12 @@ struct Quantifier_scope {
 // Helper functions for creating elaborations
 Elaboration
 make_forall(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_forall(as<Bind>(e1.expr()), e2.expr()), elab.bool_type };
+  return {elab.make_forall(as<Bind>(e1.expr()), e2.expr()), elab.bool_type};
 }
 
 Elaboration
 make_exists(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_exists(as<Bind>(e1.expr()), e2.expr()), elab.bool_type };
+  return {elab.make_exists(as<Bind>(e1.expr()), e2.expr()), elab.bool_type};
 }
 
 template<Elaboration (*Make)(Elaborator&, Elaboration, Elaboration)>
@@ -474,6 +474,5 @@ Elaborator::operator()(const Tree& tree) {
   tree.accept(vis);
   return vis.result;
 }
-
 
 } // namespace sarah

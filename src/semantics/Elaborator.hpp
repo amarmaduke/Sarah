@@ -39,7 +39,20 @@ struct Elaboration : std::pair<const Expr*, const Type*> {
 // we'd support multiple front-end elaborators. It is tempting to move this
 // class into the syntax repository.
 struct Elaborator : Context {
+
+  Elaborator(const Tree& tree)
+    : elaboration((*this)(tree)) { }
+
+  Elaborator(Elaborator& c, Elaboration& e)
+    : elaboration(e)
+  {
+    Context::top = c.Context::top;
+  }
+
+  Elaboration elaboration;
+
   Elaboration operator()(const Tree&);
+  //void elaborate(const Tree&);
 };
 
 } // namespace sarah

@@ -24,20 +24,56 @@ using namespace sarah;
   to start it off those are the assumptions made.
 */
 struct RuleSystem {
-  vector<Elaboration> language;
+  vector<Elaborator*> language;
 
-  RuleSystem(vector<Elaboration> axioms)
+  RuleSystem(vector<Elaborator*> axioms)
   : language(axioms)
   {}
 
   // Tries every implication rule to attempt to infer the antecedent.
+  // Returns true if and only if new statements where added to the language.
   bool expand()
   {
-    return true;
+    int derived_count = 0;
+    for(unsigned int i = 0; i < language.size(); ++i)
+    {
+      const Expr *expr = &language[i]->elaboration.expr();
+      // Find an expression with root ->
+      if(is<Imp,Expr>(expr))
+      {
+        // Dynamically Cast, then grab lef
+        const Imp *imp = as<Imp,Expr>(expr);
+        const Expr *left_expr = &imp->left();
+
+        // Check every other expr in the language against left_expr
+        bool found = false;
+        for(unsigned int j = 0; j < language.size(); ++j)
+        {
+          const Expr *check = &language[j]->elaboration.expr();
+          if(same(*check,*left_expr))
+          {
+            found = true;
+            break;
+          }
+        }
+
+        // If we found an expr identical ("same") to left_expr then add
+        // right_expr to the language.
+        if (found)
+        {
+          Elaboration e(imp->right(),language[i]->elaboration.type());
+          Elaborator *add = new Elaborator(*language[i],e);
+          language.push_back(add);
+          ++derived_count;
+        }
+      }
+    }
+    return derived_count > 0 ? true : false;
   }
 
   // Will expand until Expr e is found or the system has reached all inferable
   // expressions.
+  // TODO: Implement
   bool search(Elaboration& e)
   {
     return true;
@@ -47,12 +83,12 @@ struct RuleSystem {
   {
     for(unsigned int i = 0; i < language.size(); ++i)
     {
-      cout << language[i].expr() << endl;
+      cout << language[i]->elaboration.expr() << endl;
     }
   }
 };
 
-Elaboration elaborate_string(string input)
+Elaborator* elaborate_string(string input)
 {
   Lexer lex(input);
   Token_list toks = lex();
@@ -62,24 +98,22 @@ Elaboration elaborate_string(string input)
   if (not ast) {
     cout << "invalid syntax\n";
   }
-  cout << "syntax: " << sexpr(*ast) << '\n';
 
-  Elaborator elab;
-  Elaboration prog = elab(*ast);
+  Elaborator* elab =  new Elaborator(*ast);
+  const Elaboration& prog = elab->elaboration;
   if (not prog) {
     cout << "ill-formed program\n";
   }
-  cout << "abstract: " << prog.expr() << '\n';
 
-  return prog;
+  return elab;
 }
 
 int rule_system() {
 
   ifstream f("axioms");
 
-  vector<Elaboration> elaborations;
-  vector<Elaborator> elabs;
+  //vector<Elaboration> elaborations;
+  vector<Elaborator*> elabs;
 
   while(!f.eof()) {
     string input;
@@ -88,10 +122,13 @@ int rule_system() {
     if(input.find_first_not_of(' ') == string::npos)
       continue;
 
-    elaborations.push_back(elaborate_string(input));
+    elabs.push_back(elaborate_string(input));
   }
 
-  cout << elaborations[0].expr() << '\n';
+  RuleSystem rs(elabs);
+
+  rs.expand();
+  rs.print();
 
   return 0;
 }
