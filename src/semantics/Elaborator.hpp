@@ -40,19 +40,10 @@ struct Elaboration : std::pair<const Expr*, const Type*> {
 // class into the syntax repository.
 struct Elaborator : Context {
 
-  Elaborator(const Tree& tree)
-    : elaboration((*this)(tree)) { }
-
-  Elaborator(Elaborator& c, Elaboration& e)
-    : elaboration(e)
-  {
-    Context::top = c.Context::top;
-  }
-
-  Elaboration elaboration;
+  std::vector<Elaboration> elaborations;
 
   Elaboration operator()(const Tree&);
-  //void elaborate(const Tree&);
+  const Elaboration elaborate(const Tree&);
 };
 
 } // namespace sarah

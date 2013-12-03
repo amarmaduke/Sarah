@@ -475,4 +475,12 @@ Elaborator::operator()(const Tree& tree) {
   return vis.result;
 }
 
+const Elaboration
+Elaborator::elaborate(const Tree& tree) {
+  Elaboration e = (*this)(tree);
+  if(e)
+    this->elaborations.push_back(e);
+  return e;
+}
+
 } // namespace sarah
