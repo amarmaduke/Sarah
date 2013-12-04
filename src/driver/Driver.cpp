@@ -8,6 +8,7 @@
 
 #include <semantics/Language.hpp>
 #include <semantics/Elaborator.hpp>
+#include <semantics/Translator.hpp>
 #include <semantics/Debug.hpp>
 
 using namespace std;
@@ -132,10 +133,33 @@ int rule_system() {
   return 0;
 }
 
+int translate() {
+  string in("forall x:int. 2 / x");
+  Lexer lex(in);
+  Token_list toks = lex();
+
+  Parser parser(toks);
+  const Tree* ast = parser();
+  if (not ast) {
+    cout << "invalid syntax\n";
+  }
+
+  Elaborator elab;
+  Elaboration e = elab(*ast);
+  if (not e) {
+    cout << "ill-formed program\n";
+  }
+
+  Translator tra(elab);
+  Elaboration e2 = tra(e.expr());
+  return 0;
+}
+
 
 int
 main() {
-  rule_system();
+  //rule_system();
+  translate();
   return 0;
   /*
   File f(cin);

@@ -200,7 +200,7 @@ make_mul(Elaborator& elab, Elaboration e1, Elaboration e2) {
 
 Elaboration
 make_div(Elaborator& elab, Elaboration e1, Elaboration e2) {
-  return {elab.make_div(as<Int>(e1.expr()), e2.expr()), elab.int_type};
+  return {elab.make_div(as<Int>(e1.expr()), e2.expr()), elab.bool_type};
 }
 
 Elaboration
