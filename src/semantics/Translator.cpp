@@ -175,6 +175,7 @@ translate_imp(Translator& t, const Imp& expr, bool carrying_not) {
   }
 }
 
+/*
 Elaboration
 translate_iff(Translator& t, const Iff& expr, bool carrying_not) {
   Elaboration e1 = t(expr.left());
@@ -184,6 +185,7 @@ translate_iff(Translator& t, const Iff& expr, bool carrying_not) {
   else
     return { t.context.make_le(e1.expr(),e2.expr()) };
 }
+*/
 
 
 Elaboration

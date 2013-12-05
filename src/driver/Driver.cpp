@@ -66,7 +66,7 @@ struct RuleSystem {
         //if there is no identical match to the left expr, then look to see if
         //it  has AND or OR statmenets and evaluate them.
         if (found == false)
-          found = and_or(*left_expr)
+          found = and_or(*left_expr);
 
         // If we found an expr identical ("same") to left_expr then add
         // right_expr to the language.
@@ -82,16 +82,16 @@ struct RuleSystem {
   }
 
   //function which handles AND and OR logic
-  bool and_or(&Expr expr)
+  bool and_or(const Expr& expr)
   {
     //check if expression is an OR
     if(is<Or, Expr>(expr))
     {
-      const Or *or = as<Or, Expr>(expr);
-      const Expr *left_expr = &or->left();
-      const Expr *right_expr = &or->right();
+      const Or *or_ = as<Or, Expr>(&expr);
+      const Expr *left_expr = &or_->left();
+      const Expr *right_expr = &or_->right();
 
-      if ((and_or(left_expr) == true) || (and_or(right_expr) == true))
+      if ((and_or(*left_expr) == true) || (and_or(*right_expr) == true))
         return true;
       else
         return false;
@@ -99,11 +99,11 @@ struct RuleSystem {
     //check if expression is an AND
     else if (is<And, Expr>(expr))
     {
-      const And *and = as<And, Expr>(expr);
-      const Expr *left_expr = &and->left();
-      const Expr *right_expr = &and->right();
+      const And *and_ = as<And, Expr>(&expr);
+      const Expr *left_expr = &and_->left();
+      const Expr *right_expr = &and_->right();
 
-      if ((and_or(left_expr) == true) && (and_or(right_expr) == true))
+      if ((and_or(*left_expr) == true) && (and_or(*right_expr) == true))
         return true;
       else
         return false;
@@ -115,7 +115,7 @@ struct RuleSystem {
       for (unsigned int i = 0; i < elabs.size(); ++i)
       {
         const Expr *check = &elabs[i].expr();
-        if(same(*check, *left_expr))
+        if(same(*check, expr)) // TODO: Is this what you wanted here?
           return true;
       }
 
