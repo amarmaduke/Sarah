@@ -63,6 +63,11 @@ struct RuleSystem {
           }
         }
 
+        //if there is no identical match to the left expr, then look to see if
+        //it  has AND or OR statmenets and evaluate them.
+        if (found == false)
+          found = and_or(*left_expr)
+
         // If we found an expr identical ("same") to left_expr then add
         // right_expr to the language.
         if (found)
@@ -74,6 +79,50 @@ struct RuleSystem {
       }
     }
     return derived_count > 0 ? true : false;
+  }
+
+  //function which handles AND and OR logic
+  bool and_or(&Expr expr)
+  {
+    //check if expression is an OR
+    if(is<Or, Expr>(expr))
+    {
+      const Or *or = as<Or, Expr>(expr);
+      const Expr *left_expr = &or->left();
+      const Expr *right_expr = &or->right();
+
+      if ((and_or(left_expr) == true) || (and_or(right_expr) == true))
+        return true;
+      else
+        return false;
+    }
+    //check if expression is an AND
+    else if (is<And, Expr>(expr))
+    {
+      const And *and = as<And, Expr>(expr);
+      const Expr *left_expr = &and->left();
+      const Expr *right_expr = &and->right();
+
+      if ((and_or(left_expr) == true) && (and_or(right_expr) == true))
+        return true;
+      else
+        return false;
+    }
+    else
+    {
+      //otherwise it is a leaf node, check against all others in language
+      vector<Elaboration>& elabs = language->elaborations;
+      for (unsigned int i = 0; i < elabs.size(); ++i)
+      {
+        const Expr *check = &elabs[i].expr();
+        if(same(*check, *left_expr))
+          return true;
+      }
+
+    }
+
+    //if all else fails, return false
+    return false;
   }
 
   // Will expand until Expr e is found or the system has reached all inferable
