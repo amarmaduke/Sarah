@@ -183,8 +183,8 @@ int rule_system() {
 }
 
 int translate() {
-  string in("forall x:int. 2 / x");
-  Lexer lex(in);
+  File f(cin);
+  Lexer lex(f);
   Token_list toks = lex();
 
   Parser parser(toks);
@@ -198,9 +198,14 @@ int translate() {
   if (not e) {
     cout << "ill-formed program\n";
   }
+  cout << "Label 0" << endl;
 
   Translator tra(elab);
+  cout << "Label 1" << endl;
   Elaboration e2 = tra(e.expr());
+  cout << "Label 2" << endl;
+  cout << e2.expr() << endl;
+  cout << "Label 3" << endl;
   return 0;
 }
 

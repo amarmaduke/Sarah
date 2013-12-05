@@ -17,8 +17,9 @@ namespace {
 
 Elaboration
 translate_id(Translator& t, const Id& expr) {
+  if (const Decl* d = t.context.lookup(expr.str()))
+    return { t.context.make_id(expr.str()), d->type };
   return Elaboration();
-//  return t.context.make_id(expr.str());
 }
 
 Elaboration
@@ -33,7 +34,7 @@ translate_int(Translator& t, const Int& expr) {
 
 Elaboration
 translate_var(Translator& t, const Var& expr) {
-  return Elaboration();
+  return { t.context.make_var(expr.name(),expr.decl()), expr.decl().type };
 }
 
 Elaboration
@@ -47,21 +48,31 @@ Elaboration
 translate_sub(Translator& t, const Sub& expr) {
   Elaboration e1 = t(expr.left());
   Elaboration e2 = t(expr.right());
-  return { t.context.make_add(e1.expr(),e2.expr()), t.context.int_type };
+  return { t.context.make_sub(e1.expr(),e2.expr()), t.context.int_type };
 }
 
 Elaboration
 translate_mul(Translator& t, const Mul& expr) {
   Elaboration e1 = t(expr.first());
   Elaboration e2 = t(expr.second());
-  return { t.context.make_add(e1.expr(),e2.expr()), t.context.int_type };
+  return {
+    t.context.make_mul(as<Int>(e1.expr()),e2.expr()), t.context.int_type
+  };
 }
 
 Elaboration
-translate_div(Translator& t, const Div& expr) {
+translate_div(Translator& t, const Div& expr, bool carrying_not) {
   Elaboration e1 = t(expr.first());
   Elaboration e2 = t(expr.second());
-  return { t.context.make_add(e1.expr(),e2.expr()), t.context.bool_type };
+  Elaboration e = {
+    t.context.make_div(as<Int>(e1.expr()),e2.expr()),
+    t.context.bool_type
+  };
+  if (carrying_not ) {
+    return { t.context.make_not(e.expr()), t.context.bool_type };
+  } else {
+    return e;
+  }
 }
 
 Elaboration
@@ -175,41 +186,102 @@ translate_imp(Translator& t, const Imp& expr, bool carrying_not) {
   }
 }
 
-/*
+
 Elaboration
 translate_iff(Translator& t, const Iff& expr, bool carrying_not) {
-  Elaboration e1 = t(expr.left());
-  Elaboration e2 = t(expr.right());
+  Elaboration e1 = t.translate(expr.left(),true);
+  Elaboration e2 = t.translate(expr.left(),false);
+  Elaboration e3 = t.translate(expr.right(),true);
+  Elaboration e4 = t.translate(expr.right(),false);
+
+  if (carrying_not) {
+    Elaboration left = {
+      t.context.make_and(e2.expr(),e3.expr()),
+      t.context.bool_type
+    };
+    Elaboration right = {
+      t.context.make_and(e4.expr(),e1.expr()),
+      t.context.bool_type
+    };
+    return { t.context.make_or(left.expr(),right.expr()), t.context.bool_type };
+  } else {
+    Elaboration left = {
+      t.context.make_or(e1.expr(),e4.expr()),
+      t.context.bool_type
+    };
+    Elaboration right = {
+      t.context.make_or(e3.expr(),e2.expr()),
+      t.context.bool_type
+    };
+    return { t.context.make_and(left.expr(),right.expr()), t.context.bool_type};
+  }
+}
+
+
+Elaboration
+translate_not(Translator& t, const Not& expr, bool carrying_not) {
   if (carrying_not)
-    return { t.context.make_gt(e1.expr(),e2.expr()) };
-  else
-    return { t.context.make_le(e1.expr(),e2.expr()) };
-}
-*/
-
-
-Elaboration
-translate_binary(Translator& t, const Expr& expr) {
-  std::cout << "binary" << std::endl;
-  return Elaboration();
+  {
+    Elaboration e = t(expr.arg());
+    return e;
+  } else {
+    Elaboration e = t.translate(expr.arg(),true);
+    return e;
+  }
 }
 
 Elaboration
-translate_unary(Translator& t, const Expr& expr) {
-  std::cout << "unary" << std::endl;
-  return Elaboration();
+translate_bind(Translator& t, const Bind& expr) {
+  return { t.context.make_bind(expr.name(), expr.type()), expr.type() };
 }
 
 Elaboration
-translate_bind(Translator& t, const Expr& expr) {
-  std::cout << "bind" << std::endl;
-  return Elaboration();
+translate_exists(Translator& t, const Exists& expr, bool carrying_not) {
+  Elaboration e1 = t(expr.binding());
+  if (carrying_not)
+  {
+    Elaboration e2 = t.translate(expr.expr(),true);
+    return {
+      t.context.make_forall(as<Bind>(e1.expr()),e2.expr()), t.context.bool_type
+    };
+  } else {
+    Elaboration e2 = t.translate(expr.expr(),false);
+    return {
+      t.context.make_exists(as<Bind>(e1.expr()),e2.expr()), t.context.bool_type
+    };
+  }
 }
 
 Elaboration
-translate_quantifier(Translator& t, const Expr& expr) {
-  std::cout << "quantifier" << std::endl;
-  return Elaboration();
+translate_forall(Translator& t, const Forall& expr, bool carrying_not) {
+  Elaboration e1 = t(expr.binding());
+  if (carrying_not)
+  {
+    Elaboration e2 = t.translate(expr.expr(),true);
+    return {
+      t.context.make_exists(as<Bind>(e1.expr()),e2.expr()), t.context.bool_type
+    };
+  } else {
+    Elaboration e2 = t.translate(expr.expr(),false);
+    return {
+      t.context.make_forall(as<Bind>(e1.expr()),e2.expr()), t.context.bool_type
+    };
+  }
+}
+
+Elaboration
+translate_bool_type(Translator& t, const Bool_type& expr) {
+  return { t.context.make_bool_type(), t.context.bool_type };
+}
+
+Elaboration
+translate_int_type(Translator& t, const Int_type& expr) {
+  return { t.context.make_int_type(), t.context.int_type };
+}
+
+Elaboration
+translate_kind_type(Translator& t, const Kind_type& expr) {
+  return { t.context.make_kind_type(), t.context.kind_type };
 }
 
 Elaboration
@@ -220,6 +292,7 @@ translate_type(Translator& t, const Expr& expr) {
 
 Elaboration
 translate_expr(Translator& t, const Expr& expr) {
+  std::cout << "expr" << std::endl;
   return Elaboration();
 }
 
@@ -228,8 +301,8 @@ translate_expr(Translator& t, const Expr& expr) {
 Elaboration
 Translator::translate(const Expr& expr, bool carrying_not) {
   struct V : Expr::Visitor {
-    V(Translator& t)
-      : translator(t) { }
+    V(Translator& t, bool cn)
+      : translator(t), carrying_not(cn) { }
 
     void visit_expr(const Expr& expr) {
       result = translate_expr(translator,expr);
@@ -243,41 +316,77 @@ Translator::translate(const Expr& expr, bool carrying_not) {
     void visit(const Add& expr) { result = translate_add(translator,expr); }
     void visit(const Sub& expr) { result = translate_sub(translator,expr); }
     void visit(const Mul& expr) { result = translate_mul(translator,expr); }
-    void visit(const Div& expr) { result = translate_div(translator,expr); }
     void visit(const Neg& expr) { result = translate_neg(translator,expr); }
     void visit(const Pos& expr) { result = translate_pos(translator,expr); }
 
-    void visit(const Eq& expr) { result = translate_eq(translator,expr,false); }
-    void visit(const Ne& expr) { result = translate_ne(translator,expr,false); }
-    void visit(const Lt& expr) { result = translate_lt(translator,expr,false); }
-    void visit(const Gt& expr) { result = translate_gt(translator,expr,false); }
-    void visit(const Le& expr) { result = translate_le(translator,expr,false); }
-    void visit(const Ge& expr) { result = translate_ge(translator,expr,false); }
 
-    void visit(const And& expr) { result = translate_and(translator,expr,false); }
-    void visit(const Or& expr) { result = translate_or(translator,expr,false); }
-    void visit(const Imp& expr) { result = translate_binary(translator,expr); }
-    void visit(const Iff& expr) { result = translate_binary(translator,expr); }
-    void visit(const Not& expr) { result = translate_unary(translator,expr); }
-    void visit(const Bind& expr) { result = translate_bind(translator,expr); }
+    void visit(const Div& expr) {
+      result = translate_div(translator,expr,carrying_not);
+    }
+    void visit(const Eq& expr) {
+      result = translate_eq(translator,expr,carrying_not);
+    }
+    void visit(const Ne& expr) {
+      result = translate_ne(translator,expr,carrying_not);
+    }
+    void visit(const Lt& expr) {
+      result = translate_lt(translator,expr,carrying_not);
+    }
+    void visit(const Gt& expr) {
+      result = translate_gt(translator,expr,carrying_not);
+    }
+    void visit(const Le& expr) {
+      result = translate_le(translator,expr,carrying_not);
+    }
+    void visit(const Ge& expr) {
+      result = translate_ge(translator,expr,carrying_not);
+    }
+
+    void visit(const And& expr) {
+      result = translate_and(translator,expr,carrying_not);
+    }
+    void visit(const Or& expr) {
+      result = translate_or(translator,expr,carrying_not);
+    }
+    void visit(const Imp& expr) {
+      result = translate_imp(translator,expr,carrying_not);
+    }
+    void visit(const Iff& expr) {
+      result = translate_iff(translator,expr,carrying_not);
+    }
+    void visit(const Not& expr) {
+      result = translate_not(translator,expr,carrying_not);
+    }
+    void visit(const Bind& expr) {
+      result = translate_bind(translator,expr);
+    }
 
     void visit(const Exists& expr) {
-      result = translate_quantifier(translator,expr);
+      result = translate_exists(translator,expr,carrying_not);
     }
     void visit(const Forall& expr) {
-      result = translate_quantifier(translator,expr);
+      result = translate_forall(translator,expr,carrying_not);
     }
 
-    void visit_type(const Type& expr) { result = translate_type(translator,expr); }
-    void visit(const Bool_type& expr) { result = translate_type(translator,expr); }
-    void visit(const Int_type& expr) { result = translate_type(translator,expr); }
-    void visit(const Kind_type& expr) { result = translate_type(translator,expr); }
+    void visit_type(const Type& expr) {
+      result = translate_type(translator,expr);
+    }
+    void visit(const Bool_type& expr) {
+      result = translate_type(translator,expr);
+    }
+    void visit(const Int_type& expr) {
+      result = translate_type(translator,expr);
+    }
+    void visit(const Kind_type& expr) {
+      result = translate_type(translator,expr);
+    }
 
     Translator& translator;
     Elaboration result;
+    bool carrying_not;
   };
 
-  V vis(*this);
+  V vis(*this,carrying_not);
   expr.accept(vis);
   return vis.result;
 }
