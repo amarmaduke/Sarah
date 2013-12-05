@@ -19,6 +19,7 @@ struct Translator
   { }
 
   Elaboration operator()(const Expr&);
+  Elaboration translate(const Expr&, bool);
 
 };
 
